@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Venda Segura</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <section class="launch-gate" id="launch-gate">
+      <div class="launch-copy">
+        <p class="eyebrow">Sistema comercial</p>
+        <h1>Venda Segura</h1>
+        <p>Controle de clientes, parcelas e cobranças para pequenos vendedores que trabalham com crediário.</p>
+        <div class="launch-highlights">
+          <span>Clientes organizados</span>
+          <span>Cobrança por WhatsApp</span>
+          <span>Backup dos dados</span>
+        </div>
+      </div>
+      <div class="launch-panel">
+        <p class="plan-label">Plano Essencial</p>
+        <strong class="plan-price">R$ 29,90/mês</strong>
+        <p class="plan-note">Ideal para autônomos, revendedoras e pequenas lojas que vendem parcelado.</p>
+        <ul class="plan-list">
+          <li>Cadastro de clientes e dívidas</li>
+          <li>Controle de parcelas em aberto e pagas</li>
+          <li>Alertas de atraso</li>
+          <li>Mensagens prontas para cobrança</li>
+          <li>Exportação e importação de backup</li>
+        </ul>
+        <h2>Entrar no sistema</h2>
+        <p>Os dados ficam protegidos neste navegador. Use o backup para guardar uma cópia ou trocar de computador.</p>
+        <label>
+          Nome da loja ou vendedor
+          <input id="workspace-name" placeholder="Ex: Loja da Maria" />
+        </label>
+        <button class="primary-button" id="enter-app" type="button">Acessar sistema</button>
+        <div class="legal-links">
+          <a href="termos.html" target="_blank" rel="noopener">Termos de uso</a>
+          <a href="privacidade.html" target="_blank" rel="noopener">Privacidade</a>
+        </div>
+      </div>
+    </section>
+
+    <div class="app-shell is-hidden" id="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">VS</div>
+          <div class="brand-text">
+            <strong>Venda Segura</strong>
+            <span>Controle de crediário</span>
+          </div>
+          <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Recolher menu">☰</button>
+        </div>
+
+        <nav class="nav" aria-label="Navegação principal">
+          <button class="nav-item active" data-view="dashboard" type="button">Painel</button>
+          <button class="nav-item" data-view="clients" type="button">Clientes</button>
+          <button class="nav-item" data-view="charges" type="button">Cobranças</button>
+          <button class="nav-item" data-view="messages" type="button">Mensagens</button>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Venda Segura</p>
+            <h1 id="page-title">Painel</h1>
+            <p class="runtime-status" id="runtime-status">Carregando interação...</p>
+          </div>
+          <div class="top-actions">
+            <button class="ghost-button" id="export-data" type="button">Exportar backup</button>
+            <label class="file-button">
+              Importar backup
+              <input id="import-data" accept="application/json" type="file" />
+            </label>
+            <button class="ghost-button" id="seed-demo" type="button">Dados de exemplo</button>
+            <button class="primary-button" data-open-client-modal type="button">Novo cliente</button>
+          </div>
+        </header>
+
+        <section class="view active" id="dashboard-view">
+          <div class="metrics-grid">
+            <article class="metric">
+              <span>Clientes ativos</span>
+              <strong id="metric-active-clients">0</strong>
+            </article>
+            <article class="metric danger">
+              <span>Clientes em atraso</span>
+              <strong id="metric-late-clients">0</strong>
+            </article>
+            <article class="metric">
+              <span>Total a receber</span>
+              <strong id="metric-open-total">R$ 0,00</strong>
+            </article>
+            <article class="metric success">
+              <span>Recebido</span>
+              <strong id="metric-paid-total">R$ 0,00</strong>
+            </article>
+          </div>
+
+          <div class="content-grid">
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <h2>Próximos vencimentos</h2>
+                  <p>Parcelas abertas ordenadas por data.</p>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Cliente</th>
+                      <th>Parcela</th>
+                      <th>Vencimento</th>
+                      <th>Valor</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="upcoming-rows"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <h2>Alertas</h2>
+                  <p>Onde agir primeiro.</p>
+                </div>
+              </div>
+              <div class="alert-list" id="alert-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="clients-view">
+          <section class="panel client-form-panel" id="client-form-panel">
+            <div class="panel-header">
+              <div>
+                <h2 id="client-form-title">Cadastrar cliente</h2>
+                <p>Informe a venda parcelada para gerar as parcelas automaticamente.</p>
+              </div>
+            </div>
+
+            <form id="client-form">
+              <input name="clientId" type="hidden" />
+              <div class="form-grid">
+                <label>
+                  Nome
+                  <input name="name" required placeholder="Ex: Maria Silva" />
+                </label>
+                <label>
+                  Telefone
+                  <input name="phone" required placeholder="Ex: 92999998888" />
+                </label>
+                <label>
+                  Produto/observação
+                  <input name="product" placeholder="Ex: Natura, roupa, Avon" />
+                </label>
+                <label>
+                  Valor total
+                  <input name="total" required min="0" step="0.01" type="number" placeholder="0,00" />
+                </label>
+                <label>
+                  Quantidade de parcelas
+                  <input name="installments" required min="1" step="1" type="number" value="1" />
+                </label>
+                <label>
+                  Primeiro vencimento
+                  <input name="firstDueDate" required type="date" />
+                </label>
+              </div>
+
+              <label>
+                Observações internas
+                <textarea name="notes" rows="3" placeholder="Combinações, endereço, referência..."></textarea>
+              </label>
+
+              <div class="modal-actions">
+                <button class="ghost-button" id="clear-client-form" type="button">Limpar</button>
+                <button class="primary-button" id="client-form-submit" type="submit">Salvar cliente</button>
+              </div>
+            </form>
+          </section>
+
+          <div class="toolbar advanced-toolbar">
+            <label>
+              <span>Nome</span>
+              <input id="client-search" type="search" placeholder="Ex: Maria" />
+            </label>
+            <label>
+              <span>Produto</span>
+              <input id="product-filter" type="search" placeholder="Ex: Natura" />
+            </label>
+            <label>
+              <span>Cadastro de</span>
+              <input id="created-start-filter" type="date" />
+            </label>
+            <label>
+              <span>Cadastro até</span>
+              <input id="created-end-filter" type="date" />
+            </label>
+            <label>
+              <span>Vencimento de</span>
+              <input id="due-start-filter" type="date" />
+            </label>
+            <label>
+              <span>Vencimento até</span>
+              <input id="due-end-filter" type="date" />
+            </label>
+            <label>
+              <span>Status</span>
+              <select id="client-filter" aria-label="Filtrar clientes">
+                <option value="all">Todos</option>
+                <option value="late">Em atraso</option>
+                <option value="open">Com parcelas abertas</option>
+                <option value="paid">Quitados</option>
+              </select>
+            </label>
+            <button class="ghost-button" id="clear-filters" type="button">Limpar filtros</button>
+          </div>
+          <div class="client-list" id="client-list"></div>
+        </section>
+
+        <section class="view" id="charges-view">
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <h2>Cobranças de hoje</h2>
+                <p>Vencidas e vencendo nos próximos 3 dias.</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Cliente</th>
+                    <th>Telefone</th>
+                    <th>Parcela</th>
+                    <th>Vencimento</th>
+                    <th>Valor</th>
+                    <th>Ação</th>
+                  </tr>
+                </thead>
+                <tbody id="charge-rows"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="messages-view">
+          <div class="message-layout">
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <h2>Modelo antes do vencimento</h2>
+                  <p>Usado para lembrar o cliente.</p>
+                </div>
+              </div>
+              <textarea id="template-reminder" rows="8"></textarea>
+            </section>
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <h2>Modelo em atraso</h2>
+                  <p>Usado quando a parcela venceu.</p>
+                </div>
+              </div>
+              <textarea id="template-late" rows="8"></textarea>
+            </section>
+          </div>
+          <button class="primary-button" id="save-templates" type="button">Salvar mensagens</button>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
