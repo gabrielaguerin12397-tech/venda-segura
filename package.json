@@ -1,9 +1,0 @@
-{
-  "name": "venda-segura",
-  "version": "1.0.0",
-  "private": true,
-  "description": "Sistema Venda Segura para controle de crediario, parcelas e cobrancas.",
-  "scripts": {
-    "start": "node server.js"
-  }
-}
