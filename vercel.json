@@ -1,14 +1,10 @@
 {
   "cleanUrls": true,
-  "headers": [
+  "trailingSlash": false,
+  "rewrites": [
     {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store"
-        }
-      ]
+      "source": "/",
+      "destination": "/index.html"
     }
   ]
 }
