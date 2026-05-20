@@ -466,6 +466,12 @@ h2 {
   color: #9a2f28;
 }
 
+.action-delete {
+  background: #fff1f0;
+  border-color: #edb4ae;
+  color: #9a2f28;
+}
+
 .icon-button {
   width: 40px;
   padding: 0;

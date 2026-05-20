@@ -67,10 +67,7 @@ document.querySelector("#open-client-search").addEventListener("click", showClie
 );
 document.querySelector("#client-filter").addEventListener("change", renderClients);
 document.querySelector("#clear-filters").addEventListener("click", clearFilters);
-document.querySelector("#export-data").addEventListener("click", exportData);
-document.querySelector("#import-data").addEventListener("change", importData);
 document.querySelector("#save-templates").addEventListener("click", saveTemplates);
-document.querySelector("#seed-demo").addEventListener("click", seedDemoData);
 document.querySelector("#sign-out").addEventListener("click", signOut);
 
 document.querySelector("#template-reminder").value = state.templates.reminder;
@@ -410,6 +407,7 @@ async function signOut() {
 }
 
 function setView(viewName) {
+  hideClientTools();
   Object.values(views).forEach((view) => view.classList.remove("active"));
   views[viewName].classList.add("active");
   document.querySelector("#page-title").textContent = pageTitles[viewName];
@@ -417,6 +415,11 @@ function setView(viewName) {
   document.querySelectorAll(".nav-item").forEach((button) => {
     button.classList.toggle("active", button.dataset.view === viewName);
   });
+}
+
+function hideClientTools() {
+  document.querySelector("#client-form-panel").classList.add("is-hidden");
+  document.querySelector("#client-filter-panel").classList.add("is-hidden");
 }
 
 function render() {
@@ -447,15 +450,19 @@ function resetClientForm() {
 
 function startNewClient() {
   resetClientForm();
-  document.querySelector("#client-filter-panel").classList.add("is-hidden");
-  document.querySelector("#client-form-panel").classList.remove("is-hidden");
-  focusClientForm();
+  setView("clients");
+  showClientForm();
 }
 
 function focusClientForm() {
-  setView("clients");
   document.querySelector("#client-form-panel").scrollIntoView({ behavior: "smooth", block: "start" });
   document.querySelector("#client-form").elements.name.focus();
+}
+
+function showClientForm() {
+  document.querySelector("#client-filter-panel").classList.add("is-hidden");
+  document.querySelector("#client-form-panel").classList.remove("is-hidden");
+  focusClientForm();
 }
 
 function setClientFeedback(message) {
@@ -661,6 +668,14 @@ function renderClients() {
     button.addEventListener("click", () => editClient(button.dataset.clientId));
   });
 
+  list.querySelectorAll("[data-delete-client]").forEach((button) => {
+    button.addEventListener("click", () => deleteClient(button.dataset.clientId));
+  });
+
+  list.querySelectorAll("[data-delete-installment]").forEach((button) => {
+    button.addEventListener("click", () => deleteInstallment(button.dataset.clientId, button.dataset.installmentId));
+  });
+
   list.querySelectorAll("[data-toggle-history]").forEach((button) => {
     button.addEventListener("click", () => toggleHistory(button.dataset.clientId));
   });
@@ -739,6 +754,7 @@ function renderClientCard(client) {
           <button class="small-button action-client" data-edit-client data-client-id="${client.id}" type="button">Editar</button>
           <button class="small-button action-installments" data-toggle-installments data-client-id="${client.id}" type="button">Parcelas</button>
           <button class="small-button action-history" data-toggle-history data-client-id="${client.id}" type="button">Histórico</button>
+          <button class="small-button action-delete" data-delete-client data-client-id="${client.id}" type="button">Excluir cliente</button>
         </div>
       </div>
 
@@ -804,9 +820,11 @@ function renderInstallmentRow(client, installment) {
       <div class="row-actions">
         ${
           installment.paid
-            ? `<button class="small-button action-reopen" data-toggle-paid data-client-id="${client.id}" data-installment-id="${installment.id}" type="button">Reabrir</button>`
+            ? `<button class="small-button action-reopen" data-toggle-paid data-client-id="${client.id}" data-installment-id="${installment.id}" type="button">Reabrir</button>
+               <button class="small-button action-delete" data-delete-installment data-client-id="${client.id}" data-installment-id="${installment.id}" type="button">Excluir dívida</button>`
             : `<button class="small-button action-whatsapp" data-whatsapp data-client-id="${client.id}" data-installment-id="${installment.id}" type="button">WhatsApp</button>
-               <button class="small-button action-payment" data-toggle-paid data-client-id="${client.id}" data-installment-id="${installment.id}" type="button">Marcar pago</button>`
+               <button class="small-button action-payment" data-toggle-paid data-client-id="${client.id}" data-installment-id="${installment.id}" type="button">Marcar pago</button>
+               <button class="small-button action-delete" data-delete-installment data-client-id="${client.id}" data-installment-id="${installment.id}" type="button">Excluir dívida</button>`
         }
       </div>
     </div>
@@ -848,9 +866,56 @@ function editClient(clientId) {
   form.elements.notes.value = client.notes || "";
   document.querySelector("#client-form-title").textContent = "Editar cliente e dívida";
   document.querySelector("#client-form-submit").textContent = "Salvar alterações";
-  document.querySelector("#client-filter-panel").classList.add("is-hidden");
-  document.querySelector("#client-form-panel").classList.remove("is-hidden");
-  focusClientForm();
+  setView("clients");
+  showClientForm();
+}
+
+async function deleteClient(clientId) {
+  const client = state.clients.find((item) => item.id === clientId);
+  if (!client) return;
+
+  const confirmed = confirm(`Excluir ${client.name} e todas as dividas desse cliente? Essa acao nao pode ser desfeita.`);
+  if (!confirmed) return;
+
+  state.clients = state.clients.filter((item) => item.id !== clientId);
+  saveState();
+  await syncRemoteState();
+  render();
+  showClientNotice("Cliente excluido com sucesso.");
+}
+
+async function deleteInstallment(clientId, installmentId) {
+  const client = state.clients.find((item) => item.id === clientId);
+  if (!client) return;
+
+  const installment = client.installments.find((item) => item.id === installmentId);
+  if (!installment) return;
+
+  const confirmed = confirm(`Excluir a parcela ${installment.number}/${client.installments.length} de ${client.name}?`);
+  if (!confirmed) return;
+
+  client.installments = client.installments
+    .filter((item) => item.id !== installmentId)
+    .map((item, index) => ({
+      ...item,
+      number: index + 1,
+    }));
+
+  addHistory(client, "Divida excluida", `Parcela de ${money(installment.amount)} com vencimento em ${formatDate(installment.dueDate)} foi excluida.`);
+
+  if (!client.installments.length) {
+    state.clients = state.clients.filter((item) => item.id !== clientId);
+    saveState();
+    await syncRemoteState();
+    render();
+    showClientNotice("Ultima divida excluida. O cliente tambem foi removido.");
+    return;
+  }
+
+  saveState();
+  await syncRemoteState();
+  render();
+  showClientNotice("Divida excluida com sucesso.");
 }
 
 function toggleHistory(clientId) {
