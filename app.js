@@ -203,7 +203,7 @@ async function createAccount() {
   });
 
   if (error) {
-    setAuthStatus(error.message.includes("already") ? "Esse e-mail ja tem cadastro." : "Nao foi possivel criar a conta.");
+    setAuthStatus(`Nao foi possivel criar a conta: ${translateSupabaseError(error.message)}`);
     return;
   }
 
@@ -342,6 +342,28 @@ function setAuthStatus(message) {
   if (status) {
     status.textContent = message;
   }
+}
+
+function translateSupabaseError(message) {
+  const normalized = String(message || "").toLowerCase();
+
+  if (normalized.includes("already") || normalized.includes("registered")) {
+    return "esse e-mail ja tem cadastro.";
+  }
+
+  if (normalized.includes("password")) {
+    return "verifique a senha. Ela precisa ter pelo menos 6 caracteres.";
+  }
+
+  if (normalized.includes("email")) {
+    return "verifique se o e-mail esta correto e se login por e-mail esta ativo no Supabase.";
+  }
+
+  if (normalized.includes("signup") || normalized.includes("signups")) {
+    return "cadastro por e-mail pode estar desativado no Supabase.";
+  }
+
+  return message || "erro desconhecido.";
 }
 
 async function signOut() {
