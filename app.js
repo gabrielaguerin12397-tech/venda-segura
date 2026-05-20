@@ -17,6 +17,7 @@ const state = loadState();
 const runtimeStatus = document.querySelector("#runtime-status");
 let editingClientId = null;
 let filterTimer = null;
+let currentUserId = null;
 
 runtimeStatus.textContent = "Interação ativa";
 runtimeStatus.classList.add("ready");
@@ -124,8 +125,11 @@ async function showGateIfNeeded() {
   const user = data.session?.user;
 
   if (user) {
+    currentUserId = user.id;
     const storeName = user.user_metadata?.store_name || user.email || "Minha loja";
     localStorage.setItem(sessionKey, storeName);
+    await ensureUserProfile(user, storeName);
+    await loadRemoteState();
     showApp();
     return;
   }
@@ -153,6 +157,13 @@ async function enterApp() {
     if (error) {
       setAuthStatus("Nao foi possivel entrar. Confira e-mail e senha.");
       return;
+    }
+
+    const { data } = await supabaseClient.auth.getUser();
+    currentUserId = data.user?.id || null;
+    if (data.user) {
+      await ensureUserProfile(data.user, name);
+      await loadRemoteState();
     }
   }
 
@@ -199,6 +210,11 @@ async function createAccount() {
   localStorage.setItem(sessionKey, name);
 
   if (data.session) {
+    currentUserId = data.user?.id || null;
+    if (data.user) {
+      await ensureUserProfile(data.user, name);
+      await loadRemoteState();
+    }
     showApp();
     return;
   }
@@ -209,6 +225,116 @@ async function createAccount() {
 function showApp() {
   document.querySelector("#launch-gate").classList.add("is-hidden");
   document.querySelector("#app-shell").classList.remove("is-hidden");
+}
+
+async function ensureUserProfile(user, storeName) {
+  if (!supabaseClient || !user?.id) return;
+
+  await supabaseClient.from("profiles").upsert({
+    id: user.id,
+    store_name: storeName || user.email || "Minha loja",
+    subscription_status: "trial",
+  });
+}
+
+async function loadRemoteState() {
+  if (!supabaseClient || !currentUserId) return;
+
+  setAuthStatus("Carregando dados...");
+
+  const [{ data: clients }, { data: installments }, { data: history }, { data: templates }] = await Promise.all([
+    supabaseClient.from("clients").select("*").order("created_at", { ascending: false }),
+    supabaseClient.from("installments").select("*").order("number", { ascending: true }),
+    supabaseClient.from("client_history").select("*").order("created_at", { ascending: true }),
+    supabaseClient.from("message_templates").select("*").eq("user_id", currentUserId).maybeSingle(),
+  ]);
+
+  state.clients = (clients || []).map((client) => ({
+    id: client.id,
+    name: client.name,
+    phone: client.phone,
+    product: client.product,
+    notes: client.notes || "",
+    createdAt: client.created_at,
+    installments: (installments || [])
+      .filter((installment) => installment.client_id === client.id)
+      .map((installment) => ({
+        id: installment.id,
+        number: installment.number,
+        amount: Number(installment.amount),
+        dueDate: installment.due_date,
+        paid: installment.paid,
+        paidAt: installment.paid_at,
+      })),
+    history: (history || [])
+      .filter((event) => event.client_id === client.id)
+      .map((event) => ({
+        id: event.id,
+        title: event.title,
+        description: event.description,
+        createdAt: event.created_at,
+      })),
+  }));
+
+  state.templates = {
+    ...defaultTemplates,
+    ...(templates ? { reminder: templates.reminder, late: templates.late } : {}),
+  };
+
+  document.querySelector("#template-reminder").value = state.templates.reminder;
+  document.querySelector("#template-late").value = state.templates.late;
+  saveState();
+  render();
+  setAuthStatus("");
+}
+
+async function syncRemoteState() {
+  if (!supabaseClient || !currentUserId) return;
+
+  const clientRows = state.clients.map((client) => ({
+    id: client.id,
+    user_id: currentUserId,
+    name: client.name,
+    phone: client.phone,
+    product: client.product,
+    notes: client.notes || "",
+    created_at: client.createdAt || new Date().toISOString(),
+  }));
+
+  const installmentRows = state.clients.flatMap((client) =>
+    client.installments.map((installment) => ({
+      id: installment.id,
+      client_id: client.id,
+      user_id: currentUserId,
+      number: installment.number,
+      amount: installment.amount,
+      due_date: installment.dueDate,
+      paid: installment.paid,
+      paid_at: installment.paidAt,
+    })),
+  );
+
+  const historyRows = state.clients.flatMap((client) =>
+    (client.history || []).map((event) => ({
+      id: event.id,
+      client_id: client.id,
+      user_id: currentUserId,
+      title: event.title,
+      description: event.description,
+      created_at: event.createdAt,
+    })),
+  );
+
+  await supabaseClient.from("clients").delete().eq("user_id", currentUserId);
+  if (clientRows.length) await supabaseClient.from("clients").insert(clientRows);
+  if (installmentRows.length) await supabaseClient.from("installments").insert(installmentRows);
+  if (historyRows.length) await supabaseClient.from("client_history").insert(historyRows);
+  await supabaseClient.from("message_templates").upsert({
+    user_id: currentUserId,
+    reminder: state.templates.reminder,
+    late: state.templates.late,
+    updated_at: new Date().toISOString(),
+  });
 }
 
 function setAuthStatus(message) {
@@ -223,6 +349,7 @@ async function signOut() {
     await supabaseClient.auth.signOut();
   }
 
+  currentUserId = null;
   localStorage.removeItem(sessionKey);
   document.querySelector("#app-shell").classList.add("is-hidden");
   document.querySelector("#launch-gate").classList.remove("is-hidden");
@@ -275,7 +402,7 @@ function focusClientForm() {
   document.querySelector("#client-form").elements.name.focus();
 }
 
-function handleClientSubmit(event) {
+async function handleClientSubmit(event) {
   event.preventDefault();
 
   const form = event.currentTarget;
@@ -310,6 +437,7 @@ function handleClientSubmit(event) {
   }
 
   saveState();
+  await syncRemoteState();
   resetClientForm();
   render();
   setView("clients");
@@ -665,7 +793,7 @@ function getInstallmentStatus(installment) {
   return { type: "open", label: "Aberto", className: "status-open" };
 }
 
-function toggleInstallmentPaid(clientId, installmentId) {
+async function toggleInstallmentPaid(clientId, installmentId) {
   const client = state.clients.find((item) => item.id === clientId);
   const installment = client?.installments.find((item) => item.id === installmentId);
   if (!installment) return;
@@ -678,13 +806,15 @@ function toggleInstallmentPaid(clientId, installmentId) {
     `Parcela ${installment.number}/${client.installments.length} no valor de ${money(installment.amount)}.`,
   );
   saveState();
+  await syncRemoteState();
   render();
 }
 
-function saveTemplates() {
+async function saveTemplates() {
   state.templates.reminder = document.querySelector("#template-reminder").value.trim() || defaultTemplates.reminder;
   state.templates.late = document.querySelector("#template-late").value.trim() || defaultTemplates.late;
   saveState();
+  await syncRemoteState();
   alert("Mensagens salvas.");
 }
 
@@ -712,7 +842,7 @@ function importData(event) {
   if (!file) return;
 
   const reader = new FileReader();
-  reader.addEventListener("load", () => {
+  reader.addEventListener("load", async () => {
     try {
       const parsed = JSON.parse(String(reader.result));
       const imported = parsed.data || parsed;
@@ -721,6 +851,7 @@ function importData(event) {
       document.querySelector("#template-reminder").value = state.templates.reminder;
       document.querySelector("#template-late").value = state.templates.late;
       saveState();
+      await syncRemoteState();
       render();
       alert("Backup importado com sucesso.");
     } catch {
@@ -732,7 +863,7 @@ function importData(event) {
   reader.readAsText(file);
 }
 
-function openWhatsApp(clientId, installmentId) {
+async function openWhatsApp(clientId, installmentId) {
   const client = state.clients.find((item) => item.id === clientId);
   const installment = client?.installments.find((item) => item.id === installmentId);
   if (!client || !installment) return;
@@ -747,11 +878,12 @@ function openWhatsApp(clientId, installmentId) {
 
   addHistory(client, "Cobrança enviada pelo WhatsApp", `Parcela ${installment.number}/${client.installments.length}, ${money(installment.amount)}.`);
   saveState();
+  await syncRemoteState();
   render();
   window.open(`https://wa.me/${toWhatsAppPhone(client.phone)}?text=${encodeURIComponent(message)}`, "_blank", "noopener");
 }
 
-function seedDemoData() {
+async function seedDemoData() {
   if (state.clients.length && !confirm("Adicionar clientes de exemplo junto aos dados atuais?")) {
     return;
   }
@@ -799,6 +931,7 @@ function seedDemoData() {
 
   state.clients.unshift(...demo);
   saveState();
+  await syncRemoteState();
   render();
 }
 
