@@ -55,6 +55,9 @@ document.querySelectorAll("[data-open-client-modal]").forEach((button) => {
 
 document.querySelector("#enter-app").addEventListener("click", enterApp);
 document.querySelector("#create-account").addEventListener("click", createAccount);
+document.querySelector("#start-trial").addEventListener("click", () => showAuthPage("signup"));
+document.querySelector("#open-login").addEventListener("click", () => showAuthPage("login"));
+document.querySelector("#back-to-sales").addEventListener("click", showSalesPage);
 document.querySelector("#sidebar-toggle").addEventListener("click", toggleSidebar);
 document.querySelector("#client-form").addEventListener("submit", handleClientSubmit);
 document.querySelector("#clear-client-form").addEventListener("click", resetClientForm);
@@ -117,7 +120,7 @@ async function showGateIfNeeded() {
 
     setAuthStatus("Configure o Supabase no arquivo config.js para liberar o acesso.");
     document.querySelector("#app-shell").classList.add("is-hidden");
-    document.querySelector("#launch-gate").classList.remove("is-hidden");
+    showAuthPage("login");
     return;
   }
 
@@ -135,11 +138,15 @@ async function showGateIfNeeded() {
   }
 
   localStorage.removeItem(sessionKey);
-  document.querySelector("#launch-gate").classList.remove("is-hidden");
-  document.querySelector("#app-shell").classList.add("is-hidden");
+  showSalesPage();
 }
 
 async function enterApp() {
+  if (document.querySelector("#enter-app").dataset.authMode === "switch-login") {
+    showAuthPage("login");
+    return;
+  }
+
   const name = document.querySelector("#workspace-name").value.trim() || "Minha loja";
 
   if (supabaseClient) {
@@ -224,7 +231,31 @@ async function createAccount() {
 
 function showApp() {
   document.querySelector("#launch-gate").classList.add("is-hidden");
+  document.querySelector("#auth-gate").classList.add("is-hidden");
   document.querySelector("#app-shell").classList.remove("is-hidden");
+}
+
+function showSalesPage() {
+  document.querySelector("#launch-gate").classList.remove("is-hidden");
+  document.querySelector("#auth-gate").classList.add("is-hidden");
+  document.querySelector("#app-shell").classList.add("is-hidden");
+  setAuthStatus("");
+}
+
+function showAuthPage(mode) {
+  const isLogin = mode === "login";
+  document.querySelector("#launch-gate").classList.add("is-hidden");
+  document.querySelector("#auth-gate").classList.remove("is-hidden");
+  document.querySelector("#app-shell").classList.add("is-hidden");
+  document.querySelector("#auth-title").textContent = isLogin ? "Entrar na conta" : "Criar conta";
+  document.querySelector("#auth-intro").textContent = isLogin
+    ? "Entre para acessar seus clientes, parcelas e mensagens salvas."
+    : "Teste gratis e organize seus clientes, parcelas e cobrancas em uma conta segura.";
+  document.querySelector("#workspace-name").closest("label").classList.toggle("is-hidden", isLogin);
+  document.querySelector("#create-account").classList.toggle("is-hidden", isLogin);
+  document.querySelector("#enter-app").textContent = isLogin ? "Entrar" : "Ja tenho conta";
+  document.querySelector("#enter-app").dataset.authMode = isLogin ? "login" : "switch-login";
+  setAuthStatus("");
 }
 
 async function ensureUserProfile(user, storeName) {
@@ -373,8 +404,7 @@ async function signOut() {
 
   currentUserId = null;
   localStorage.removeItem(sessionKey);
-  document.querySelector("#app-shell").classList.add("is-hidden");
-  document.querySelector("#launch-gate").classList.remove("is-hidden");
+  showSalesPage();
   setAuthStatus("Voce saiu do sistema.");
 }
 

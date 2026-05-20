@@ -29,8 +29,21 @@
           <li>Mensagens prontas para cobrança</li>
           <li>Exportação e importação de backup</li>
         </ul>
-        <h2>Entrar ou criar conta</h2>
-        <p>Use seu e-mail para acessar seus dados com seguranca. Clientes, parcelas e cobrancas ficarao vinculados a sua conta.</p>
+        <button class="primary-button" id="start-trial" type="button">Fazer cadastro e testar gratis</button>
+        <button class="ghost-button" id="open-login" type="button">Ja tem conta? Faca o login</button>
+        <div class="legal-links">
+          <a href="termos.html" target="_blank" rel="noopener">Termos de uso</a>
+          <a href="privacidade.html" target="_blank" rel="noopener">Privacidade</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="auth-gate is-hidden" id="auth-gate">
+      <div class="auth-card">
+        <button class="back-button" id="back-to-sales" type="button">Voltar</button>
+        <p class="eyebrow">Venda Segura</p>
+        <h1 id="auth-title">Criar conta</h1>
+        <p id="auth-intro">Teste gratis e organize seus clientes, parcelas e cobrancas em uma conta segura.</p>
         <label>
           Nome da loja ou vendedor
           <input id="workspace-name" placeholder="Ex: Loja da Maria" />
@@ -44,8 +57,8 @@
           <input id="auth-password" autocomplete="current-password" placeholder="Minimo de 6 caracteres" type="password" />
         </label>
         <div class="auth-actions">
-          <button class="primary-button" id="enter-app" type="button">Entrar</button>
-          <button class="ghost-button" id="create-account" type="button">Criar conta</button>
+          <button class="primary-button" id="create-account" type="button">Criar conta e testar gratis</button>
+          <button class="ghost-button" id="enter-app" type="button">Entrar</button>
         </div>
         <p class="auth-status" id="auth-status"></p>
         <div class="legal-links">

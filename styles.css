@@ -148,6 +148,45 @@ button {
   text-decoration: none;
 }
 
+.auth-gate {
+  align-items: center;
+  background: #102821;
+  display: grid;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.auth-card {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 16px;
+  margin: 0 auto;
+  max-width: 460px;
+  padding: 24px;
+  width: 100%;
+}
+
+.auth-card h1 {
+  font-size: 30px;
+}
+
+.auth-card p {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.back-button {
+  background: transparent;
+  border: 0;
+  color: var(--primary);
+  font-weight: 800;
+  justify-self: start;
+  padding: 0;
+}
+
 .auth-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
