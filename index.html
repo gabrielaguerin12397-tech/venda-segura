@@ -29,13 +29,25 @@
           <li>Mensagens prontas para cobrança</li>
           <li>Exportação e importação de backup</li>
         </ul>
-        <h2>Entrar no sistema</h2>
-        <p>Os dados ficam protegidos neste navegador. Use o backup para guardar uma cópia ou trocar de computador.</p>
+        <h2>Entrar ou criar conta</h2>
+        <p>Use seu e-mail para acessar seus dados com seguranca. Clientes, parcelas e cobrancas ficarao vinculados a sua conta.</p>
         <label>
           Nome da loja ou vendedor
           <input id="workspace-name" placeholder="Ex: Loja da Maria" />
         </label>
-        <button class="primary-button" id="enter-app" type="button">Acessar sistema</button>
+        <label>
+          E-mail
+          <input id="auth-email" autocomplete="email" inputmode="email" placeholder="voce@email.com" type="email" />
+        </label>
+        <label>
+          Senha
+          <input id="auth-password" autocomplete="current-password" placeholder="Minimo de 6 caracteres" type="password" />
+        </label>
+        <div class="auth-actions">
+          <button class="primary-button" id="enter-app" type="button">Entrar</button>
+          <button class="ghost-button" id="create-account" type="button">Criar conta</button>
+        </div>
+        <p class="auth-status" id="auth-status"></p>
         <div class="legal-links">
           <a href="termos.html" target="_blank" rel="noopener">Termos de uso</a>
           <a href="privacidade.html" target="_blank" rel="noopener">Privacidade</a>
@@ -76,6 +88,7 @@
               <input id="import-data" accept="application/json" type="file" />
             </label>
             <button class="ghost-button" id="seed-demo" type="button">Dados de exemplo</button>
+            <button class="ghost-button" id="sign-out" type="button">Sair</button>
             <button class="primary-button" data-open-client-modal type="button">Novo cliente</button>
           </div>
         </header>
@@ -277,6 +290,8 @@
       </main>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

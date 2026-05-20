@@ -1,5 +1,10 @@
 const storageKey = "venda-segura";
 const sessionKey = "venda-segura-session";
+const appConfig = window.VENDA_SEGURA_CONFIG || {};
+const supabaseClient =
+  window.supabase && appConfig.supabaseUrl && appConfig.supabaseAnonKey
+    ? window.supabase.createClient(appConfig.supabaseUrl, appConfig.supabaseAnonKey)
+    : null;
 
 const defaultTemplates = {
   reminder:
@@ -48,6 +53,7 @@ document.querySelectorAll("[data-open-client-modal]").forEach((button) => {
 });
 
 document.querySelector("#enter-app").addEventListener("click", enterApp);
+document.querySelector("#create-account").addEventListener("click", createAccount);
 document.querySelector("#sidebar-toggle").addEventListener("click", toggleSidebar);
 document.querySelector("#client-form").addEventListener("submit", handleClientSubmit);
 document.querySelector("#clear-client-form").addEventListener("click", resetClientForm);
@@ -60,14 +66,13 @@ document.querySelector("#export-data").addEventListener("click", exportData);
 document.querySelector("#import-data").addEventListener("change", importData);
 document.querySelector("#save-templates").addEventListener("click", saveTemplates);
 document.querySelector("#seed-demo").addEventListener("click", seedDemoData);
+document.querySelector("#sign-out").addEventListener("click", signOut);
 
 document.querySelector("#template-reminder").value = state.templates.reminder;
 document.querySelector("#template-late").value = state.templates.late;
 document.querySelector("#workspace-name").value = localStorage.getItem(sessionKey) || "";
 
-resetClientForm();
-render();
-showGateIfNeeded();
+initializeApp();
 
 function loadState() {
   const saved = localStorage.getItem(storageKey);
@@ -96,19 +101,132 @@ function saveState() {
   localStorage.setItem(storageKey, JSON.stringify(state));
 }
 
-function showGateIfNeeded() {
-  const workspaceName = localStorage.getItem(sessionKey);
-  if (workspaceName) {
-    document.querySelector("#launch-gate").classList.add("is-hidden");
-    document.querySelector("#app-shell").classList.remove("is-hidden");
+async function initializeApp() {
+  resetClientForm();
+  render();
+  await showGateIfNeeded();
+}
+
+async function showGateIfNeeded() {
+  if (!supabaseClient) {
+    if (appConfig.allowLocalMode) {
+      setAuthStatus("Supabase nao configurado. Modo local liberado para testes.");
+      return;
+    }
+
+    setAuthStatus("Configure o Supabase no arquivo config.js para liberar o acesso.");
+    document.querySelector("#app-shell").classList.add("is-hidden");
+    document.querySelector("#launch-gate").classList.remove("is-hidden");
+    return;
+  }
+
+  const { data } = await supabaseClient.auth.getSession();
+  const user = data.session?.user;
+
+  if (user) {
+    const storeName = user.user_metadata?.store_name || user.email || "Minha loja";
+    localStorage.setItem(sessionKey, storeName);
+    showApp();
+    return;
+  }
+
+  localStorage.removeItem(sessionKey);
+  document.querySelector("#launch-gate").classList.remove("is-hidden");
+  document.querySelector("#app-shell").classList.add("is-hidden");
+}
+
+async function enterApp() {
+  const name = document.querySelector("#workspace-name").value.trim() || "Minha loja";
+
+  if (supabaseClient) {
+    const email = document.querySelector("#auth-email").value.trim();
+    const password = document.querySelector("#auth-password").value;
+
+    if (!email || !password) {
+      setAuthStatus("Informe e-mail e senha para entrar.");
+      return;
+    }
+
+    setAuthStatus("Entrando...");
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      setAuthStatus("Nao foi possivel entrar. Confira e-mail e senha.");
+      return;
+    }
+  }
+
+  localStorage.setItem(sessionKey, name);
+  showApp();
+}
+
+async function createAccount() {
+  if (!supabaseClient) {
+    setAuthStatus("Configure o Supabase antes de criar contas.");
+    return;
+  }
+
+  const name = document.querySelector("#workspace-name").value.trim() || "Minha loja";
+  const email = document.querySelector("#auth-email").value.trim();
+  const password = document.querySelector("#auth-password").value;
+
+  if (!email || !password) {
+    setAuthStatus("Informe e-mail e senha para criar a conta.");
+    return;
+  }
+
+  if (password.length < 6) {
+    setAuthStatus("A senha precisa ter pelo menos 6 caracteres.");
+    return;
+  }
+
+  setAuthStatus("Criando conta...");
+  const { data, error } = await supabaseClient.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        store_name: name,
+      },
+    },
+  });
+
+  if (error) {
+    setAuthStatus(error.message.includes("already") ? "Esse e-mail ja tem cadastro." : "Nao foi possivel criar a conta.");
+    return;
+  }
+
+  localStorage.setItem(sessionKey, name);
+
+  if (data.session) {
+    showApp();
+    return;
+  }
+
+  setAuthStatus("Conta criada. Se o Supabase pedir confirmacao, confira seu e-mail antes de entrar.");
+}
+
+function showApp() {
+  document.querySelector("#launch-gate").classList.add("is-hidden");
+  document.querySelector("#app-shell").classList.remove("is-hidden");
+}
+
+function setAuthStatus(message) {
+  const status = document.querySelector("#auth-status");
+  if (status) {
+    status.textContent = message;
   }
 }
 
-function enterApp() {
-  const name = document.querySelector("#workspace-name").value.trim() || "Minha loja";
-  localStorage.setItem(sessionKey, name);
-  document.querySelector("#launch-gate").classList.add("is-hidden");
-  document.querySelector("#app-shell").classList.remove("is-hidden");
+async function signOut() {
+  if (supabaseClient) {
+    await supabaseClient.auth.signOut();
+  }
+
+  localStorage.removeItem(sessionKey);
+  document.querySelector("#app-shell").classList.add("is-hidden");
+  document.querySelector("#launch-gate").classList.remove("is-hidden");
+  setAuthStatus("Voce saiu do sistema.");
 }
 
 function setView(viewName) {
