@@ -41,6 +41,11 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 .launch-gate {
   align-items: stretch;
   background: linear-gradient(135deg, #102821 0%, #176b5b 48%, #eef3f8 48%, #eef3f8 100%);
@@ -629,6 +634,27 @@ th {
 
 .client-form-panel {
   margin-bottom: 16px;
+}
+
+.client-feedback,
+.client-notice {
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.client-feedback {
+  color: var(--success);
+  margin: 10px 0 0;
+  min-height: 18px;
+}
+
+.client-notice {
+  background: #e7f6ec;
+  border: 1px solid #9ed7b2;
+  color: var(--success);
+  margin: 0 0 12px;
+  padding: 12px;
 }
 
 .search-box {

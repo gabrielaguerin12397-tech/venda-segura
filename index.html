@@ -102,6 +102,7 @@
             </label>
             <button class="ghost-button" id="seed-demo" type="button">Dados de exemplo</button>
             <button class="ghost-button" id="sign-out" type="button">Sair</button>
+            <button class="ghost-button" id="open-client-search" type="button">Procurar cliente</button>
             <button class="primary-button" data-open-client-modal type="button">Novo cliente</button>
           </div>
         </header>
@@ -163,7 +164,7 @@
         </section>
 
         <section class="view" id="clients-view">
-          <section class="panel client-form-panel" id="client-form-panel">
+          <section class="panel client-form-panel is-hidden" id="client-form-panel">
             <div class="panel-header">
               <div>
                 <h2 id="client-form-title">Cadastrar cliente</h2>
@@ -209,10 +210,11 @@
                 <button class="ghost-button" id="clear-client-form" type="button">Limpar</button>
                 <button class="primary-button" id="client-form-submit" type="submit">Salvar cliente</button>
               </div>
+              <p class="client-feedback" id="client-feedback"></p>
             </form>
           </section>
 
-          <div class="toolbar advanced-toolbar">
+          <div class="toolbar advanced-toolbar is-hidden" id="client-filter-panel">
             <label>
               <span>Nome</span>
               <input id="client-search" type="search" placeholder="Ex: Maria" />

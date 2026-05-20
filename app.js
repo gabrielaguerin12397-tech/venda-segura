@@ -61,6 +61,7 @@ document.querySelector("#back-to-sales").addEventListener("click", showSalesPage
 document.querySelector("#sidebar-toggle").addEventListener("click", toggleSidebar);
 document.querySelector("#client-form").addEventListener("submit", handleClientSubmit);
 document.querySelector("#clear-client-form").addEventListener("click", resetClientForm);
+document.querySelector("#open-client-search").addEventListener("click", showClientSearch);
 ["#client-search", "#product-filter", "#created-start-filter", "#created-end-filter", "#due-start-filter", "#due-end-filter"].forEach(
   (selector) => document.querySelector(selector).addEventListener("input", scheduleClientRender),
 );
@@ -441,10 +442,13 @@ function resetClientForm() {
   form.elements.firstDueDate.value = toInputDate(new Date());
   document.querySelector("#client-form-title").textContent = "Cadastrar cliente";
   document.querySelector("#client-form-submit").textContent = "Salvar cliente";
+  setClientFeedback("");
 }
 
 function startNewClient() {
   resetClientForm();
+  document.querySelector("#client-filter-panel").classList.add("is-hidden");
+  document.querySelector("#client-form-panel").classList.remove("is-hidden");
   focusClientForm();
 }
 
@@ -454,10 +458,45 @@ function focusClientForm() {
   document.querySelector("#client-form").elements.name.focus();
 }
 
+function setClientFeedback(message) {
+  const feedback = document.querySelector("#client-feedback");
+  if (feedback) {
+    feedback.textContent = message;
+  }
+}
+
+function showClientNotice(message) {
+  const list = document.querySelector("#client-list");
+  const notice = document.createElement("div");
+  notice.className = "client-notice";
+  notice.textContent = message;
+  list.before(notice);
+
+  setTimeout(() => {
+    notice.remove();
+  }, 4000);
+}
+
+function showClientSearch() {
+  setView("clients");
+  document.querySelector("#client-form-panel").classList.add("is-hidden");
+  document.querySelector("#client-filter-panel").classList.remove("is-hidden");
+  document.querySelector("#client-filter-panel").scrollIntoView({ behavior: "smooth", block: "start" });
+  document.querySelector("#client-search").focus();
+}
+
 async function handleClientSubmit(event) {
   event.preventDefault();
 
   const form = event.currentTarget;
+  const submitButton = document.querySelector("#client-form-submit");
+
+  if (submitButton.disabled) return;
+
+  submitButton.disabled = true;
+  submitButton.textContent = editingClientId ? "Salvando..." : "Cadastrando...";
+  setClientFeedback("");
+
   const formData = new FormData(form);
   const total = Number(formData.get("total"));
   const installments = Number(formData.get("installments"));
@@ -465,34 +504,44 @@ async function handleClientSubmit(event) {
   const clientId = String(formData.get("clientId") || "");
   const existing = state.clients.find((item) => item.id === clientId);
 
-  if (existing) {
-    existing.name = String(formData.get("name")).trim();
-    existing.phone = onlyDigits(String(formData.get("phone")));
-    existing.product = String(formData.get("product")).trim() || "compra parcelada";
-    existing.notes = String(formData.get("notes")).trim();
-    existing.installments = buildEditedInstallments(existing, total, installments, firstDueDate);
-    addHistory(existing, "Cliente editado", `Dados e dívida atualizados para ${money(total)} em ${installments} parcela(s).`);
-  } else {
-    const client = {
-      id: createId(),
-      name: String(formData.get("name")).trim(),
-      phone: onlyDigits(String(formData.get("phone"))),
-      product: String(formData.get("product")).trim() || "compra parcelada",
-      notes: String(formData.get("notes")).trim(),
-      createdAt: new Date().toISOString(),
-      installments: buildInstallments(total, installments, firstDueDate),
-      history: [],
-    };
+  try {
+    if (existing) {
+      existing.name = String(formData.get("name")).trim();
+      existing.phone = onlyDigits(String(formData.get("phone")));
+      existing.product = String(formData.get("product")).trim() || "compra parcelada";
+      existing.notes = String(formData.get("notes")).trim();
+      existing.installments = buildEditedInstallments(existing, total, installments, firstDueDate);
+      addHistory(existing, "Cliente editado", `Dados e dívida atualizados para ${money(total)} em ${installments} parcela(s).`);
+    } else {
+      const client = {
+        id: createId(),
+        name: String(formData.get("name")).trim(),
+        phone: onlyDigits(String(formData.get("phone"))),
+        product: String(formData.get("product")).trim() || "compra parcelada",
+        notes: String(formData.get("notes")).trim(),
+        createdAt: new Date().toISOString(),
+        installments: buildInstallments(total, installments, firstDueDate),
+        history: [],
+      };
 
-    addHistory(client, "Cliente cadastrado", `Dívida criada em ${installments} parcela(s), total de ${money(total)}.`);
-    state.clients.unshift(client);
+      addHistory(client, "Cliente cadastrado", `Dívida criada em ${installments} parcela(s), total de ${money(total)}.`);
+      state.clients.unshift(client);
+    }
+
+    saveState();
+    await syncRemoteState();
+    resetClientForm();
+    document.querySelector("#client-form-panel").classList.add("is-hidden");
+    render();
+    setView("clients");
+    setClientFeedback(existing ? "Cliente atualizado com sucesso." : "Cliente cadastrado com sucesso.");
+    showClientNotice(existing ? "Cliente atualizado com sucesso." : "Cliente cadastrado com sucesso.");
+  } catch (error) {
+    setClientFeedback("Nao foi possivel salvar o cliente. Tente novamente.");
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = editingClientId ? "Salvar alterações" : "Salvar cliente";
   }
-
-  saveState();
-  await syncRemoteState();
-  resetClientForm();
-  render();
-  setView("clients");
 }
 
 function buildInstallments(total, count, firstDueDate) {
@@ -799,6 +848,8 @@ function editClient(clientId) {
   form.elements.notes.value = client.notes || "";
   document.querySelector("#client-form-title").textContent = "Editar cliente e dívida";
   document.querySelector("#client-form-submit").textContent = "Salvar alterações";
+  document.querySelector("#client-filter-panel").classList.add("is-hidden");
+  document.querySelector("#client-form-panel").classList.remove("is-hidden");
   focusClientForm();
 }
 
