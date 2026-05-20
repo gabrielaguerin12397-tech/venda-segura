@@ -153,7 +153,8 @@ button:disabled {
   text-decoration: none;
 }
 
-.auth-gate {
+.auth-gate,
+.billing-gate {
   align-items: center;
   background: #102821;
   display: grid;

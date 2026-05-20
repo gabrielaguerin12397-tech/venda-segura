@@ -18,6 +18,7 @@ const runtimeStatus = document.querySelector("#runtime-status");
 let editingClientId = null;
 let filterTimer = null;
 let currentUserId = null;
+let currentProfile = null;
 
 runtimeStatus.textContent = "Interação ativa";
 runtimeStatus.classList.add("ready");
@@ -69,6 +70,8 @@ document.querySelector("#client-filter").addEventListener("change", renderClient
 document.querySelector("#clear-filters").addEventListener("click", clearFilters);
 document.querySelector("#save-templates").addEventListener("click", saveTemplates);
 document.querySelector("#sign-out").addEventListener("click", signOut);
+document.querySelector("#billing-sign-out").addEventListener("click", signOut);
+document.querySelector("#subscribe-button").addEventListener("click", startSubscription);
 
 document.querySelector("#template-reminder").value = state.templates.reminder;
 document.querySelector("#template-late").value = state.templates.late;
@@ -131,7 +134,7 @@ async function showGateIfNeeded() {
     localStorage.setItem(sessionKey, storeName);
     await ensureUserProfile(user, storeName);
     await loadRemoteState();
-    showApp();
+    showAppOrBilling();
     return;
   }
 
@@ -173,7 +176,7 @@ async function enterApp() {
   }
 
   localStorage.setItem(sessionKey, name);
-  showApp();
+  showAppOrBilling();
 }
 
 async function createAccount() {
@@ -220,7 +223,7 @@ async function createAccount() {
       await ensureUserProfile(data.user, name);
       await loadRemoteState();
     }
-    showApp();
+    showAppOrBilling();
     return;
   }
 
@@ -230,12 +233,14 @@ async function createAccount() {
 function showApp() {
   document.querySelector("#launch-gate").classList.add("is-hidden");
   document.querySelector("#auth-gate").classList.add("is-hidden");
+  document.querySelector("#billing-gate").classList.add("is-hidden");
   document.querySelector("#app-shell").classList.remove("is-hidden");
 }
 
 function showSalesPage() {
   document.querySelector("#launch-gate").classList.remove("is-hidden");
   document.querySelector("#auth-gate").classList.add("is-hidden");
+  document.querySelector("#billing-gate").classList.add("is-hidden");
   document.querySelector("#app-shell").classList.add("is-hidden");
   setAuthStatus("");
 }
@@ -244,6 +249,7 @@ function showAuthPage(mode) {
   const isLogin = mode === "login";
   document.querySelector("#launch-gate").classList.add("is-hidden");
   document.querySelector("#auth-gate").classList.remove("is-hidden");
+  document.querySelector("#billing-gate").classList.add("is-hidden");
   document.querySelector("#app-shell").classList.add("is-hidden");
   document.querySelector("#auth-title").textContent = isLogin ? "Entrar na conta" : "Criar conta";
   document.querySelector("#auth-intro").textContent = isLogin
@@ -254,6 +260,35 @@ function showAuthPage(mode) {
   document.querySelector("#enter-app").textContent = isLogin ? "Entrar" : "Ja tenho conta";
   document.querySelector("#enter-app").dataset.authMode = isLogin ? "login" : "switch-login";
   setAuthStatus("");
+}
+
+function showAppOrBilling() {
+  if (hasSubscriptionAccess()) {
+    showApp();
+    return;
+  }
+
+  showBillingGate();
+}
+
+function showBillingGate() {
+  document.querySelector("#launch-gate").classList.add("is-hidden");
+  document.querySelector("#auth-gate").classList.add("is-hidden");
+  document.querySelector("#billing-gate").classList.remove("is-hidden");
+  document.querySelector("#app-shell").classList.add("is-hidden");
+  document.querySelector("#billing-message").textContent =
+    currentProfile?.subscription_status === "past_due"
+      ? "Identificamos uma pendencia na assinatura. Regularize para continuar usando."
+      : "Seu periodo de teste terminou. Assine o Plano Essencial para continuar usando.";
+}
+
+function hasSubscriptionAccess() {
+  if (!currentProfile) return true;
+  if (currentProfile.subscription_status === "active") return true;
+  if (currentProfile.subscription_status === "trial") {
+    return !currentProfile.trial_ends_at || new Date(currentProfile.trial_ends_at) > new Date();
+  }
+  return false;
 }
 
 async function ensureUserProfile(user, storeName) {
@@ -271,12 +306,15 @@ async function loadRemoteState() {
 
   setAuthStatus("Carregando dados...");
 
-  const [{ data: clients }, { data: installments }, { data: history }, { data: templates }] = await Promise.all([
+  const [{ data: profile }, { data: clients }, { data: installments }, { data: history }, { data: templates }] = await Promise.all([
+    supabaseClient.from("profiles").select("*").eq("id", currentUserId).maybeSingle(),
     supabaseClient.from("clients").select("*").order("created_at", { ascending: false }),
     supabaseClient.from("installments").select("*").order("number", { ascending: true }),
     supabaseClient.from("client_history").select("*").order("created_at", { ascending: true }),
     supabaseClient.from("message_templates").select("*").eq("user_id", currentUserId).maybeSingle(),
   ]);
+
+  currentProfile = profile || null;
 
   state.clients = (clients || []).map((client) => ({
     id: client.id,
@@ -401,9 +439,54 @@ async function signOut() {
   }
 
   currentUserId = null;
+  currentProfile = null;
   localStorage.removeItem(sessionKey);
   showSalesPage();
   setAuthStatus("Voce saiu do sistema.");
+}
+
+async function startSubscription() {
+  const button = document.querySelector("#subscribe-button");
+  const status = document.querySelector("#billing-status");
+
+  try {
+    button.disabled = true;
+    button.textContent = "Abrindo assinatura...";
+    status.textContent = "";
+
+    const { data } = await supabaseClient.auth.getSession();
+    const accessToken = data.session?.access_token;
+
+    if (!accessToken) {
+      status.textContent = "Entre novamente para assinar.";
+      return;
+    }
+
+    const response = await fetch("/api/create-checkout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        storeName: localStorage.getItem(sessionKey) || "Minha loja",
+      }),
+    });
+
+    const payload = await response.json();
+
+    if (!response.ok || !payload.url) {
+      status.textContent = payload.error || "Nao foi possivel abrir o checkout.";
+      return;
+    }
+
+    window.location.href = payload.url;
+  } catch {
+    status.textContent = "Nao foi possivel abrir o checkout.";
+  } finally {
+    button.disabled = false;
+    button.textContent = "Assinar agora";
+  }
 }
 
 function setView(viewName) {
