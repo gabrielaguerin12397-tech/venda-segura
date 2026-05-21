@@ -17,7 +17,12 @@ module.exports = async function handler(request, response) {
 
     const user = await getSupabaseUser(token);
     const storeName = request.body?.storeName || user.email || "Minha loja";
+    const cpfCnpj = onlyDigits(request.body?.cpfCnpj || "");
     const origin = request.headers.origin || `https://${request.headers.host}`;
+
+    if (![11, 14].includes(cpfCnpj.length)) {
+      return response.status(400).json({ error: "Informe um CPF ou CNPJ valido para assinar." });
+    }
 
     const checkoutResponse = await fetch(`${ASAAS_API_URL}/checkouts`, {
       method: "POST",
@@ -46,6 +51,7 @@ module.exports = async function handler(request, response) {
         customerData: {
           name: storeName,
           email: user.email,
+          cpfCnpj,
         },
         subscription: {
           cycle: "MONTHLY",
@@ -124,4 +130,8 @@ function addDays(date, days) {
 
 function formatAsaasDate(date) {
   return date.toISOString().slice(0, 10);
+}
+
+function onlyDigits(value) {
+  return String(value).replace(/\D/g, "");
 }

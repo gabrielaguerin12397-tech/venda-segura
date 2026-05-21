@@ -482,6 +482,7 @@ async function startSubscription() {
       },
       body: JSON.stringify({
         storeName: localStorage.getItem(sessionKey) || "Minha loja",
+        cpfCnpj: onlyDigits(document.querySelector("#billing-cpf-cnpj").value),
       }),
     });
 
