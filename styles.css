@@ -315,6 +315,34 @@ button:disabled {
   padding: 0;
 }
 
+.modal-backdrop {
+  align-items: center;
+  background: rgba(16, 40, 33, 0.62);
+  display: grid;
+  inset: 0;
+  padding: 18px;
+  position: fixed;
+  z-index: 20;
+}
+
+.modal-card {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
+  display: grid;
+  gap: 16px;
+  margin: 0 auto;
+  max-width: 440px;
+  padding: 22px;
+  width: 100%;
+}
+
+.modal-card p {
+  color: var(--muted);
+  line-height: 1.45;
+  margin-bottom: 0;
+}
+
 .auth-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;

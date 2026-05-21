@@ -59,7 +59,10 @@ document.querySelector("#create-account").addEventListener("click", createAccoun
 document.querySelector("#start-trial").addEventListener("click", () => showAuthPage("signup"));
 document.querySelector("#open-login").addEventListener("click", () => showAuthPage("login"));
 document.querySelector("#back-to-sales").addEventListener("click", showSalesPage);
-document.querySelector("#forgot-password").addEventListener("click", recoverPassword);
+document.querySelector("#forgot-password").addEventListener("click", openPasswordModal);
+document.querySelector("#close-password-modal").addEventListener("click", closePasswordModal);
+document.querySelector("#cancel-password-recovery").addEventListener("click", closePasswordModal);
+document.querySelector("#send-password-recovery").addEventListener("click", recoverPassword);
 document.querySelector("#sidebar-toggle").addEventListener("click", toggleSidebar);
 document.querySelector("#client-form").addEventListener("submit", handleClientSubmit);
 document.querySelector("#clear-client-form").addEventListener("click", resetClientForm);
@@ -266,30 +269,51 @@ function showAuthPage(mode) {
   setAuthStatus("");
 }
 
+function openPasswordModal() {
+  const email = document.querySelector("#auth-email").value.trim();
+  document.querySelector("#recovery-email").value = email;
+  document.querySelector("#recovery-status").textContent = "";
+  document.querySelector("#password-modal").classList.remove("is-hidden");
+  document.querySelector("#recovery-email").focus();
+}
+
+function closePasswordModal() {
+  document.querySelector("#password-modal").classList.add("is-hidden");
+}
+
 async function recoverPassword() {
   if (!supabaseClient) {
-    setAuthStatus("Configure o Supabase antes de recuperar senha.");
+    document.querySelector("#recovery-status").textContent = "Configure o Supabase antes de recuperar senha.";
     return;
   }
 
-  const email = document.querySelector("#auth-email").value.trim();
+  const email = document.querySelector("#recovery-email").value.trim();
+  const button = document.querySelector("#send-password-recovery");
+  const status = document.querySelector("#recovery-status");
 
   if (!email) {
-    setAuthStatus("Informe seu e-mail para recuperar a senha.");
-    document.querySelector("#auth-email").focus();
+    status.textContent = "Informe seu e-mail para recuperar a senha.";
+    document.querySelector("#recovery-email").focus();
     return;
   }
+
+  button.disabled = true;
+  button.textContent = "Enviando...";
+  status.textContent = "";
 
   const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
     redirectTo: window.location.origin,
   });
 
+  button.disabled = false;
+  button.textContent = "Enviar link";
+
   if (error) {
-    setAuthStatus(`Nao foi possivel enviar recuperacao: ${translateSupabaseError(error.message)}`);
+    status.textContent = `Nao foi possivel enviar recuperacao: ${translateSupabaseError(error.message)}`;
     return;
   }
 
-  setAuthStatus("Enviamos um link de recuperacao para seu e-mail.");
+  status.textContent = "Enviamos um link de recuperacao para seu e-mail.";
 }
 
 function showAppOrBilling() {

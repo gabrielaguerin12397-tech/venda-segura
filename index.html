@@ -88,6 +88,28 @@
       </div>
     </section>
 
+    <div class="modal-backdrop is-hidden" id="password-modal" role="dialog" aria-modal="true" aria-labelledby="password-modal-title">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div>
+            <p class="eyebrow">Recuperar acesso</p>
+            <h2 id="password-modal-title">Esqueci minha senha</h2>
+          </div>
+          <button class="icon-button" id="close-password-modal" type="button" aria-label="Fechar">×</button>
+        </div>
+        <p>Digite seu e-mail para receber o link de recuperacao de senha.</p>
+        <label>
+          E-mail
+          <input id="recovery-email" autocomplete="email" inputmode="email" placeholder="voce@email.com" type="email" />
+        </label>
+        <div class="modal-actions">
+          <button class="ghost-button" id="cancel-password-recovery" type="button">Cancelar</button>
+          <button class="primary-button" id="send-password-recovery" type="button">Enviar link</button>
+        </div>
+        <p class="auth-status" id="recovery-status"></p>
+      </div>
+    </div>
+
     <section class="billing-gate is-hidden" id="billing-gate">
       <div class="checkout-card">
         <div>
