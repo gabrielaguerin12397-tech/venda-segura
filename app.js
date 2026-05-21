@@ -294,7 +294,19 @@ function hasSubscriptionAccess() {
 async function ensureUserProfile(user, storeName) {
   if (!supabaseClient || !user?.id) return;
 
-  await supabaseClient.from("profiles").upsert({
+  const { data: existingProfile } = await supabaseClient.from("profiles").select("id").eq("id", user.id).maybeSingle();
+
+  if (existingProfile) {
+    await supabaseClient
+      .from("profiles")
+      .update({
+        store_name: storeName || user.email || "Minha loja",
+      })
+      .eq("id", user.id);
+    return;
+  }
+
+  await supabaseClient.from("profiles").insert({
     id: user.id,
     store_name: storeName || user.email || "Minha loja",
     subscription_status: "trial",
