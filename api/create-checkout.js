@@ -17,8 +17,8 @@ module.exports = async function handler(request, response) {
 
     const user = await getSupabaseUser(token);
     const customerName = String(request.body?.name || user.email || "Minha loja").trim();
-    const cpfCnpj = onlyDigits(request.body?.cpfCnpj || "");
-    const phoneNumber = onlyDigits(request.body?.phoneNumber || "");
+    const cpfCnpj = normalizeCpfCnpj(request.body?.cpfCnpj || "");
+    const phoneNumber = normalizeBrazilPhone(request.body?.phoneNumber || "");
     const postalCode = onlyDigits(request.body?.postalCode || "");
     const address = String(request.body?.address || "").trim();
     const addressNumber = String(request.body?.addressNumber || "").trim();
@@ -27,11 +27,11 @@ module.exports = async function handler(request, response) {
     const state = String(request.body?.state || "").trim().toUpperCase();
     const origin = request.headers.origin || `https://${request.headers.host}`;
 
-    if (![11, 14].includes(cpfCnpj.length)) {
+    if (!isValidCpfCnpj(cpfCnpj)) {
       return response.status(400).json({ error: "Informe um CPF ou CNPJ valido para assinar." });
     }
 
-    if (![10, 11].includes(phoneNumber.length)) {
+    if (!phoneNumber) {
       return response.status(400).json({ error: "Informe um telefone valido com DDD para assinar." });
     }
 
@@ -157,4 +157,57 @@ function formatAsaasDate(date) {
 
 function onlyDigits(value) {
   return String(value).replace(/\D/g, "");
+}
+
+function normalizeCpfCnpj(value) {
+  return onlyDigits(value).slice(0, 14);
+}
+
+function normalizeBrazilPhone(value) {
+  let digits = onlyDigits(value);
+
+  if (digits.startsWith("0055")) {
+    digits = digits.slice(4);
+  }
+
+  if (digits.startsWith("55") && digits.length > 11) {
+    digits = digits.slice(2);
+  }
+
+  return [10, 11].includes(digits.length) ? digits : "";
+}
+
+function isValidCpfCnpj(value) {
+  return isValidCpf(value) || isValidCnpj(value);
+}
+
+function isValidCpf(value) {
+  const cpf = onlyDigits(value);
+  if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
+
+  let sum = 0;
+  for (let i = 0; i < 9; i += 1) sum += Number(cpf[i]) * (10 - i);
+  let digit = 11 - (sum % 11);
+  if (digit >= 10) digit = 0;
+  if (digit !== Number(cpf[9])) return false;
+
+  sum = 0;
+  for (let i = 0; i < 10; i += 1) sum += Number(cpf[i]) * (11 - i);
+  digit = 11 - (sum % 11);
+  if (digit >= 10) digit = 0;
+  return digit === Number(cpf[10]);
+}
+
+function isValidCnpj(value) {
+  const cnpj = onlyDigits(value);
+  if (cnpj.length !== 14 || /^(\d)\1+$/.test(cnpj)) return false;
+
+  const calc = (size) => {
+    const weights = size === 12 ? [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2] : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    const sum = weights.reduce((total, weight, index) => total + Number(cnpj[index]) * weight, 0);
+    const mod = sum % 11;
+    return mod < 2 ? 0 : 11 - mod;
+  };
+
+  return calc(12) === Number(cnpj[12]) && calc(13) === Number(cnpj[13]);
 }

@@ -72,6 +72,8 @@ document.querySelector("#save-templates").addEventListener("click", saveTemplate
 document.querySelector("#sign-out").addEventListener("click", signOut);
 document.querySelector("#billing-sign-out").addEventListener("click", signOut);
 document.querySelector("#billing-form").addEventListener("submit", startSubscription);
+document.querySelector("#billing-cpf-cnpj").addEventListener("input", formatBillingDocument);
+document.querySelector("#billing-phone").addEventListener("input", formatBillingPhone);
 
 document.querySelector("#template-reminder").value = state.templates.reminder;
 document.querySelector("#template-late").value = state.templates.late;
@@ -462,6 +464,20 @@ async function startSubscription(event) {
 
   const button = document.querySelector("#subscribe-button");
   const status = document.querySelector("#billing-status");
+  const cpfCnpj = normalizeCpfCnpj(document.querySelector("#billing-cpf-cnpj").value);
+  const phoneNumber = normalizeBrazilPhone(document.querySelector("#billing-phone").value);
+
+  if (!isValidCpfCnpj(cpfCnpj)) {
+    status.textContent = "Informe um CPF ou CNPJ valido.";
+    document.querySelector("#billing-cpf-cnpj").focus();
+    return;
+  }
+
+  if (!phoneNumber) {
+    status.textContent = "Informe um telefone valido com DDD. Exemplo: 92999998888.";
+    document.querySelector("#billing-phone").focus();
+    return;
+  }
 
   try {
     button.disabled = true;
@@ -484,8 +500,8 @@ async function startSubscription(event) {
       },
       body: JSON.stringify({
         name: document.querySelector("#billing-name").value.trim() || localStorage.getItem(sessionKey) || "Minha loja",
-        cpfCnpj: onlyDigits(document.querySelector("#billing-cpf-cnpj").value),
-        phoneNumber: onlyDigits(document.querySelector("#billing-phone").value),
+        cpfCnpj,
+        phoneNumber,
         postalCode: onlyDigits(document.querySelector("#billing-postal-code").value),
         address: document.querySelector("#billing-address").value.trim(),
         addressNumber: document.querySelector("#billing-address-number").value.trim(),
@@ -509,6 +525,99 @@ async function startSubscription(event) {
     button.disabled = false;
     button.textContent = "Assinar agora";
   }
+}
+
+function formatBillingDocument(event) {
+  const digits = normalizeCpfCnpj(event.target.value);
+  event.target.value = digits.length <= 11 ? formatCpf(digits) : formatCnpj(digits);
+}
+
+function formatBillingPhone(event) {
+  const digits = normalizeBrazilPhone(event.target.value) || normalizeBrazilPhoneLoose(event.target.value);
+  event.target.value = formatBrazilPhone(digits);
+}
+
+function normalizeCpfCnpj(value) {
+  return onlyDigits(value).slice(0, 14);
+}
+
+function normalizeBrazilPhone(value) {
+  const digits = normalizeBrazilPhoneLoose(value);
+  return [10, 11].includes(digits.length) ? digits : "";
+}
+
+function normalizeBrazilPhoneLoose(value) {
+  let digits = onlyDigits(value);
+
+  if (digits.startsWith("0055")) {
+    digits = digits.slice(4);
+  }
+
+  if (digits.startsWith("55") && digits.length > 11) {
+    digits = digits.slice(2);
+  }
+
+  return digits.slice(0, 11);
+}
+
+function isValidCpfCnpj(value) {
+  return isValidCpf(value) || isValidCnpj(value);
+}
+
+function isValidCpf(value) {
+  const cpf = onlyDigits(value);
+  if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
+
+  let sum = 0;
+  for (let i = 0; i < 9; i += 1) sum += Number(cpf[i]) * (10 - i);
+  let digit = 11 - (sum % 11);
+  if (digit >= 10) digit = 0;
+  if (digit !== Number(cpf[9])) return false;
+
+  sum = 0;
+  for (let i = 0; i < 10; i += 1) sum += Number(cpf[i]) * (11 - i);
+  digit = 11 - (sum % 11);
+  if (digit >= 10) digit = 0;
+  return digit === Number(cpf[10]);
+}
+
+function isValidCnpj(value) {
+  const cnpj = onlyDigits(value);
+  if (cnpj.length !== 14 || /^(\d)\1+$/.test(cnpj)) return false;
+
+  const calc = (size) => {
+    const weights = size === 12 ? [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2] : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    const sum = weights.reduce((total, weight, index) => total + Number(cnpj[index]) * weight, 0);
+    const mod = sum % 11;
+    return mod < 2 ? 0 : 11 - mod;
+  };
+
+  return calc(12) === Number(cnpj[12]) && calc(13) === Number(cnpj[13]);
+}
+
+function formatCpf(value) {
+  const digits = onlyDigits(value);
+  return digits
+    .replace(/^(\d{3})(\d)/, "$1.$2")
+    .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1-$2");
+}
+
+function formatCnpj(value) {
+  const digits = onlyDigits(value);
+  return digits
+    .replace(/^(\d{2})(\d)/, "$1.$2")
+    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1/$2")
+    .replace(/(\d{4})(\d)/, "$1-$2");
+}
+
+function formatBrazilPhone(value) {
+  const digits = onlyDigits(value);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 }
 
 async function readJsonResponse(response) {
