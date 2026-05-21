@@ -305,6 +305,16 @@ button:disabled {
   padding: 0;
 }
 
+.link-button {
+  background: transparent;
+  border: 0;
+  color: var(--primary);
+  font-weight: 800;
+  justify-self: center;
+  min-height: auto;
+  padding: 0;
+}
+
 .auth-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;

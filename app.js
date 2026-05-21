@@ -59,6 +59,7 @@ document.querySelector("#create-account").addEventListener("click", createAccoun
 document.querySelector("#start-trial").addEventListener("click", () => showAuthPage("signup"));
 document.querySelector("#open-login").addEventListener("click", () => showAuthPage("login"));
 document.querySelector("#back-to-sales").addEventListener("click", showSalesPage);
+document.querySelector("#forgot-password").addEventListener("click", recoverPassword);
 document.querySelector("#sidebar-toggle").addEventListener("click", toggleSidebar);
 document.querySelector("#client-form").addEventListener("submit", handleClientSubmit);
 document.querySelector("#clear-client-form").addEventListener("click", resetClientForm);
@@ -259,9 +260,36 @@ function showAuthPage(mode) {
     : "Teste gratis e organize seus clientes, parcelas e cobrancas em uma conta segura.";
   document.querySelector("#workspace-name").closest("label").classList.toggle("is-hidden", isLogin);
   document.querySelector("#create-account").classList.toggle("is-hidden", isLogin);
+  document.querySelector("#forgot-password").classList.toggle("is-hidden", !isLogin);
   document.querySelector("#enter-app").textContent = isLogin ? "Entrar" : "Ja tenho conta";
   document.querySelector("#enter-app").dataset.authMode = isLogin ? "login" : "switch-login";
   setAuthStatus("");
+}
+
+async function recoverPassword() {
+  if (!supabaseClient) {
+    setAuthStatus("Configure o Supabase antes de recuperar senha.");
+    return;
+  }
+
+  const email = document.querySelector("#auth-email").value.trim();
+
+  if (!email) {
+    setAuthStatus("Informe seu e-mail para recuperar a senha.");
+    document.querySelector("#auth-email").focus();
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin,
+  });
+
+  if (error) {
+    setAuthStatus(`Nao foi possivel enviar recuperacao: ${translateSupabaseError(error.message)}`);
+    return;
+  }
+
+  setAuthStatus("Enviamos um link de recuperacao para seu e-mail.");
 }
 
 function showAppOrBilling() {
