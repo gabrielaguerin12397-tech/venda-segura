@@ -48,9 +48,9 @@ button:disabled {
 
 .launch-gate {
   align-items: stretch;
-  background: linear-gradient(135deg, #102821 0%, #176b5b 48%, #eef3f8 48%, #eef3f8 100%);
+  background: linear-gradient(135deg, #102821 0%, #176b5b 54%, #eef3f8 54%, #eef3f8 100%);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 460px);
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 440px);
   gap: 32px;
   min-height: 100vh;
   padding: 48px;
@@ -67,7 +67,7 @@ button:disabled {
 }
 
 .launch-copy h1 {
-  font-size: 56px;
+  font-size: 62px;
   margin-bottom: 14px;
 }
 
@@ -92,6 +92,67 @@ button:disabled {
   font-size: 13px;
   font-weight: 800;
   padding: 8px 12px;
+}
+
+.sales-preview {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 8px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+  color: var(--text);
+  display: grid;
+  gap: 14px;
+  margin-top: 28px;
+  max-width: 520px;
+  padding: 18px;
+}
+
+.preview-topline,
+.preview-row {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.preview-topline span,
+.preview-row strong {
+  background: #e7f6ec;
+  border-radius: 999px;
+  color: var(--success);
+  font-size: 12px;
+  padding: 6px 10px;
+}
+
+.preview-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.preview-metrics div,
+.preview-row {
+  background: var(--surface-strong);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.preview-metrics span,
+.preview-row span {
+  color: var(--muted);
+  display: block;
+  font-size: 13px;
+}
+
+.preview-metrics strong {
+  display: block;
+  font-size: 20px;
+  margin-top: 4px;
+}
+
+.preview-row.late strong {
+  background: #ffe9e7;
+  color: var(--danger);
 }
 
 .launch-panel {
@@ -127,6 +188,12 @@ button:disabled {
 
 .plan-note {
   margin-bottom: 0;
+}
+
+.sales-note {
+  font-size: 13px;
+  margin: -4px 0 0;
+  text-align: center;
 }
 
 .plan-list {
@@ -866,6 +933,10 @@ textarea {
     font-size: 42px;
   }
 
+  .sales-preview {
+    max-width: none;
+  }
+
   .app-shell {
     grid-template-columns: 1fr;
   }
@@ -908,6 +979,19 @@ textarea {
 }
 
 @media (max-width: 680px) {
+  .launch-gate {
+    padding: 18px 14px;
+  }
+
+  .launch-copy p {
+    font-size: 17px;
+  }
+
+  .preview-metrics,
+  .auth-actions {
+    grid-template-columns: 1fr;
+  }
+
   .main {
     padding: 18px 14px;
   }
