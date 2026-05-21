@@ -485,7 +485,7 @@ async function startSubscription() {
       }),
     });
 
-    const payload = await response.json();
+    const payload = await readJsonResponse(response);
 
     if (!response.ok || !payload.url) {
       status.textContent = payload.error || "Nao foi possivel abrir o checkout.";
@@ -494,10 +494,22 @@ async function startSubscription() {
 
     window.location.href = payload.url;
   } catch {
-    status.textContent = "Nao foi possivel abrir o checkout.";
+    status.textContent = "Nao foi possivel abrir o checkout. Confira se a pasta api foi enviada ao GitHub e se a Vercel terminou o deploy.";
   } finally {
     button.disabled = false;
     button.textContent = "Assinar agora";
+  }
+}
+
+async function readJsonResponse(response) {
+  const text = await response.text();
+
+  try {
+    return text ? JSON.parse(text) : {};
+  } catch {
+    return {
+      error: `Resposta inesperada da Vercel (${response.status}). Verifique os logs do deploy.`,
+    };
   }
 }
 
