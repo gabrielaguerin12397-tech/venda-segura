@@ -71,7 +71,7 @@ document.querySelector("#clear-filters").addEventListener("click", clearFilters)
 document.querySelector("#save-templates").addEventListener("click", saveTemplates);
 document.querySelector("#sign-out").addEventListener("click", signOut);
 document.querySelector("#billing-sign-out").addEventListener("click", signOut);
-document.querySelector("#subscribe-button").addEventListener("click", startSubscription);
+document.querySelector("#billing-form").addEventListener("submit", startSubscription);
 
 document.querySelector("#template-reminder").value = state.templates.reminder;
 document.querySelector("#template-late").value = state.templates.late;
@@ -457,7 +457,9 @@ async function signOut() {
   setAuthStatus("Voce saiu do sistema.");
 }
 
-async function startSubscription() {
+async function startSubscription(event) {
+  event.preventDefault();
+
   const button = document.querySelector("#subscribe-button");
   const status = document.querySelector("#billing-status");
 
@@ -484,6 +486,12 @@ async function startSubscription() {
         name: document.querySelector("#billing-name").value.trim() || localStorage.getItem(sessionKey) || "Minha loja",
         cpfCnpj: onlyDigits(document.querySelector("#billing-cpf-cnpj").value),
         phoneNumber: onlyDigits(document.querySelector("#billing-phone").value),
+        postalCode: onlyDigits(document.querySelector("#billing-postal-code").value),
+        address: document.querySelector("#billing-address").value.trim(),
+        addressNumber: document.querySelector("#billing-address-number").value.trim(),
+        province: document.querySelector("#billing-province").value.trim(),
+        city: document.querySelector("#billing-city").value.trim(),
+        state: document.querySelector("#billing-state").value.trim().toUpperCase(),
       }),
     });
 

@@ -19,6 +19,12 @@ module.exports = async function handler(request, response) {
     const customerName = String(request.body?.name || user.email || "Minha loja").trim();
     const cpfCnpj = onlyDigits(request.body?.cpfCnpj || "");
     const phoneNumber = onlyDigits(request.body?.phoneNumber || "");
+    const postalCode = onlyDigits(request.body?.postalCode || "");
+    const address = String(request.body?.address || "").trim();
+    const addressNumber = String(request.body?.addressNumber || "").trim();
+    const province = String(request.body?.province || "").trim();
+    const city = String(request.body?.city || "").trim();
+    const state = String(request.body?.state || "").trim().toUpperCase();
     const origin = request.headers.origin || `https://${request.headers.host}`;
 
     if (![11, 14].includes(cpfCnpj.length)) {
@@ -27,6 +33,10 @@ module.exports = async function handler(request, response) {
 
     if (![10, 11].includes(phoneNumber.length)) {
       return response.status(400).json({ error: "Informe um telefone valido com DDD para assinar." });
+    }
+
+    if (postalCode.length !== 8 || !address || !addressNumber || !province || !city || state.length !== 2) {
+      return response.status(400).json({ error: "Informe endereco completo para assinar." });
     }
 
     const checkoutResponse = await fetch(`${ASAAS_API_URL}/checkouts`, {
@@ -59,6 +69,12 @@ module.exports = async function handler(request, response) {
           cpfCnpj,
           phone: phoneNumber,
           phoneNumber,
+          postalCode,
+          address,
+          addressNumber,
+          province,
+          city,
+          state,
         },
         subscription: {
           cycle: "MONTHLY",

@@ -242,6 +242,51 @@ button:disabled {
   width: 100%;
 }
 
+.checkout-card {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 18px;
+  margin: 0 auto;
+  max-width: 780px;
+  padding: 24px;
+  width: 100%;
+}
+
+.checkout-card p {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.checkout-summary {
+  background: var(--surface-strong);
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+}
+
+.checkout-summary span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.checkout-summary strong {
+  font-size: 28px;
+}
+
+.checkout-summary p {
+  margin: 0;
+}
+
+.checkout-form {
+  display: grid;
+  gap: 14px;
+}
+
 .auth-card h1 {
   font-size: 30px;
 }
