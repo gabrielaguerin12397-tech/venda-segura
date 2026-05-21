@@ -16,12 +16,17 @@ module.exports = async function handler(request, response) {
     }
 
     const user = await getSupabaseUser(token);
-    const storeName = request.body?.storeName || user.email || "Minha loja";
+    const customerName = String(request.body?.name || user.email || "Minha loja").trim();
     const cpfCnpj = onlyDigits(request.body?.cpfCnpj || "");
+    const phoneNumber = onlyDigits(request.body?.phoneNumber || "");
     const origin = request.headers.origin || `https://${request.headers.host}`;
 
     if (![11, 14].includes(cpfCnpj.length)) {
       return response.status(400).json({ error: "Informe um CPF ou CNPJ valido para assinar." });
+    }
+
+    if (![10, 11].includes(phoneNumber.length)) {
+      return response.status(400).json({ error: "Informe um telefone valido com DDD para assinar." });
     }
 
     const checkoutResponse = await fetch(`${ASAAS_API_URL}/checkouts`, {
@@ -49,9 +54,11 @@ module.exports = async function handler(request, response) {
           },
         ],
         customerData: {
-          name: storeName,
+          name: customerName,
           email: user.email,
           cpfCnpj,
+          phone: phoneNumber,
+          phoneNumber,
         },
         subscription: {
           cycle: "MONTHLY",

@@ -481,8 +481,9 @@ async function startSubscription() {
         Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
-        storeName: localStorage.getItem(sessionKey) || "Minha loja",
+        name: document.querySelector("#billing-name").value.trim() || localStorage.getItem(sessionKey) || "Minha loja",
         cpfCnpj: onlyDigits(document.querySelector("#billing-cpf-cnpj").value),
+        phoneNumber: onlyDigits(document.querySelector("#billing-phone").value),
       }),
     });
 

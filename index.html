@@ -94,8 +94,16 @@
         <p id="billing-message">Para continuar usando o Venda Segura, ative o Plano Essencial.</p>
         <strong class="plan-price">R$ 29,90/mês</strong>
         <label>
+          Nome completo
+          <input id="billing-name" autocomplete="name" placeholder="Nome do assinante" />
+        </label>
+        <label>
           CPF ou CNPJ
           <input id="billing-cpf-cnpj" inputmode="numeric" placeholder="Digite somente numeros" />
+        </label>
+        <label>
+          Telefone
+          <input id="billing-phone" autocomplete="tel" inputmode="tel" placeholder="DDD + numero" />
         </label>
         <button class="primary-button" id="subscribe-button" type="button">Assinar agora</button>
         <button class="ghost-button" id="billing-sign-out" type="button">Sair</button>
