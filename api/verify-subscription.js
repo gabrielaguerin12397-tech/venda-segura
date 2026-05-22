@@ -17,14 +17,28 @@ module.exports = async function handler(request, response) {
     const user = await getSupabaseUser(token);
     const profile = await getProfile(user.id);
     const payments = await findAsaasPayments(user.id, profile?.subscription_external_id);
+    const paidPayment = findPaidPayment(payments);
     const status = getSubscriptionStatus(payments);
 
-    if (status !== "pending") {
+    if (paidPayment?.billingType === "PIX") {
+      const accessUntil = addDays(new Date(), 30).toISOString();
       await updateProfile(user.id, {
-        subscription_status: status,
-        subscription_provider: "asaas",
-        subscription_external_id: payments[0]?.subscription || profile?.subscription_external_id || null,
+        subscription_status: "trial",
+        subscription_provider: "asaas_pix",
+        subscription_external_id: paidPayment.checkoutSession || paidPayment.id || profile?.subscription_external_id || null,
+        trial_ends_at: accessUntil,
       });
+
+      return response.status(200).json({
+        status: "active",
+        message: "Pix confirmado. Seu acesso foi liberado por 30 dias.",
+        paymentStatus: paidPayment.status,
+        accessUntil,
+      });
+    }
+
+    if (status !== "pending") {
+      await updateProfile(user.id, getProfileUpdate(status, payments[0], profile));
     }
 
     return response.status(200).json({
@@ -36,6 +50,18 @@ module.exports = async function handler(request, response) {
     return response.status(500).json({ error: error.message || "Erro interno." });
   }
 };
+
+function findPaidPayment(payments) {
+  return payments.find((payment) => ["CONFIRMED", "RECEIVED", "RECEIVED_IN_CASH"].includes(payment.status));
+}
+
+function getProfileUpdate(status, payment, profile) {
+  return {
+    subscription_status: status,
+    subscription_provider: "asaas",
+    subscription_external_id: payment?.subscription || payment?.checkoutSession || payment?.id || profile?.subscription_external_id || null,
+  };
+}
 
 function getSubscriptionStatus(payments) {
   if (payments.some((payment) => ["CONFIRMED", "RECEIVED", "RECEIVED_IN_CASH"].includes(payment.status))) {
@@ -58,6 +84,12 @@ function getStatusMessage(status) {
   if (status === "past_due") return "Pagamento esta pendente ou vencido.";
   if (status === "blocked") return "Pagamento nao foi aprovado.";
   return "Pagamento ainda aguardando confirmacao do Asaas.";
+}
+
+function addDays(date, days) {
+  const copy = new Date(date);
+  copy.setDate(copy.getDate() + days);
+  return copy;
 }
 
 async function findAsaasPayments(userId, checkoutSession) {

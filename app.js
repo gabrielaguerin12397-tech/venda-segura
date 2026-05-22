@@ -74,6 +74,7 @@ document.querySelector("#clear-filters").addEventListener("click", clearFilters)
 document.querySelector("#sign-out").addEventListener("click", signOut);
 document.querySelector("#billing-sign-out").addEventListener("click", signOut);
 document.querySelector("#billing-form").addEventListener("submit", startSubscription);
+document.querySelector("#pix-button").addEventListener("click", startPixPayment);
 document.querySelector("#verify-subscription").addEventListener("click", () => verifySubscription());
 document.querySelector("#billing-cpf-cnpj").addEventListener("input", formatBillingDocument);
 document.querySelector("#billing-phone").addEventListener("input", formatBillingPhone);
@@ -669,8 +670,24 @@ async function signOut() {
 
 async function startSubscription(event) {
   event.preventDefault();
+  await startCheckout({
+    endpoint: "/api/create-checkout",
+    button: document.querySelector("#subscribe-button"),
+    loadingText: "Abrindo assinatura...",
+    fallbackText: "Assinar com cartao de credito",
+  });
+}
 
-  const button = document.querySelector("#subscribe-button");
+async function startPixPayment() {
+  await startCheckout({
+    endpoint: "/api/create-pix-checkout",
+    button: document.querySelector("#pix-button"),
+    loadingText: "Gerando Pix...",
+    fallbackText: "Pagar 30 dias com Pix",
+  });
+}
+
+async function startCheckout({ endpoint, button, loadingText, fallbackText }) {
   const status = document.querySelector("#billing-status");
   const cpfCnpj = normalizeCpfCnpj(document.querySelector("#billing-cpf-cnpj").value);
   const phoneNumber = normalizeBrazilPhone(document.querySelector("#billing-phone").value);
@@ -689,7 +706,7 @@ async function startSubscription(event) {
 
   try {
     button.disabled = true;
-    button.textContent = "Abrindo assinatura...";
+    button.textContent = loadingText;
     status.textContent = "";
 
     const { data } = await supabaseClient.auth.getSession();
@@ -700,7 +717,7 @@ async function startSubscription(event) {
       return;
     }
 
-    const response = await fetch("/api/create-checkout", {
+    const response = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -731,7 +748,7 @@ async function startSubscription(event) {
     status.textContent = "Nao foi possivel abrir o checkout. Confira se a pasta api foi enviada ao GitHub e se a Vercel terminou o deploy.";
   } finally {
     button.disabled = false;
-    button.textContent = "Assinar agora";
+    button.textContent = fallbackText;
   }
 }
 
@@ -773,7 +790,7 @@ async function verifySubscription(options = {}) {
 
     if (payload.status === "active") {
       showApp();
-      showToast("Pagamento confirmado. Sua assinatura esta ativa.", "success");
+      showToast(payload.message || "Pagamento confirmado. Seu acesso esta ativo.", "success");
       return;
     }
 
