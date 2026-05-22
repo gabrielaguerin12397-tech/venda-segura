@@ -10,9 +10,9 @@
     <title>Venda Segura</title>
     <link rel="icon" href="icons/favicon.svg?v=14" type="image/svg+xml" />
     <link rel="shortcut icon" href="icons/favicon.svg?v=14" type="image/svg+xml" />
-    <link rel="manifest" href="manifest.webmanifest?v=14" />
-    <link rel="apple-touch-icon" href="icons/icon-192.svg?v=14" />
-    <link rel="stylesheet" href="styles.css?v=14" />
+    <link rel="manifest" href="manifest.webmanifest?v=15" />
+    <link rel="apple-touch-icon" href="icons/icon-192.svg?v=15" />
+    <link rel="stylesheet" href="styles.css?v=15" />
   </head>
   <body>
     <div class="update-banner is-hidden" id="update-banner">
@@ -27,31 +27,52 @@
         <p class="eyebrow">Para revendedoras, autônomas e pequenos negócios</p>
         <h1>Venda Segura</h1>
         <p>Controle clientes, parcelas e cobranças pelo WhatsApp sem depender de caderno, prints ou memória.</p>
-        <div class="launch-highlights">
-          <span>Teste grátis</span>
-          <span>Cobrança por WhatsApp</span>
-          <span>Dados salvos online</span>
-          <span>Pix ou cartão</span>
+        <div class="launch-feature-grid">
+          <div class="launch-feature"><span>WhatsApp</span><strong>Cobrança pronta</strong></div>
+          <div class="launch-feature"><span>Online</span><strong>Dados salvos</strong></div>
+          <div class="launch-feature"><span>Pagamento</span><strong>Pix ou cartão</strong></div>
+          <div class="launch-feature"><span>Controle</span><strong>Seguro e simples</strong></div>
         </div>
-        <div class="sales-preview" aria-label="Resumo visual do painel Venda Segura">
-          <div class="preview-topline">
-            <strong>Painel de cobrancas</strong>
-            <span>Hoje</span>
-          </div>
-          <div class="preview-metrics">
-            <div><span>A receber</span><strong>R$ 1.280,00</strong></div>
-            <div><span>Em atraso</span><strong>3 clientes</strong></div>
-          </div>
-          <div class="preview-row">
-            <span>Maria Silva</span>
-            <strong>Vence hoje</strong>
-          </div>
-          <div class="preview-row late">
-            <span>Joao Pereira</span>
-            <strong>Atrasado</strong>
+        <div class="launch-trust">
+          <strong>+10 mil</strong>
+          <span>negócios podem organizar cobranças com mais clareza todos os dias.</span>
+        </div>
+      </div>
+
+      <div class="phone-preview" aria-label="Prévia do app Venda Segura no celular">
+        <div class="phone-frame">
+          <div class="phone-speaker"></div>
+          <div class="phone-screen">
+            <div class="phone-topbar">
+              <span>☰</span>
+              <strong>Painel de cobranças</strong>
+              <span>⌕</span>
+            </div>
+            <div class="phone-pill">Hoje</div>
+            <div class="phone-metrics">
+              <div><span>A receber</span><strong>R$ 1.280,00</strong><small>Valor total</small></div>
+              <div><span>Em atraso</span><strong class="danger-text">3 clientes</strong><small>Precisa atenção</small></div>
+            </div>
+            <div class="phone-card">
+              <span>Cobranças enviadas</span>
+              <strong>12</strong>
+              <small>Nos últimos 7 dias</small>
+            </div>
+            <div class="phone-section-title">
+              <strong>Cobranças</strong>
+              <span>⌕ ⋮</span>
+            </div>
+            <div class="phone-list">
+              <div><span>MS</span><strong>Maria Silva<small>R$ 320,00 · 2/3</small></strong><em>Vence hoje</em></div>
+              <div><span class="late-avatar">JP</span><strong>João Pereira<small>R$ 450,00 · 1/3</small></strong><em class="late">Atrasado</em></div>
+              <div><span>AS</span><strong>Ana Souza<small>R$ 150,00 · 3/3</small></strong><em>Vence amanhã</em></div>
+              <div><span>BF</span><strong>Beatriz Freitas<small>R$ 80,00 · 1/2</small></strong><em>Em dia</em></div>
+            </div>
+            <button class="phone-button" type="button">+ Nova cobrança</button>
           </div>
         </div>
       </div>
+
       <div class="launch-panel">
         <p class="plan-label">Comece agora</p>
         <strong class="plan-price">R$ 29,90/mês</strong>
@@ -368,8 +389,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js?v=14"></script>
-    <script src="app.js?v=14"></script>
+    <script src="config.js?v=15"></script>
+    <script src="app.js?v=15"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
