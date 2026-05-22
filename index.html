@@ -116,6 +116,30 @@
       </div>
     </div>
 
+    <div class="modal-backdrop is-hidden" id="new-password-modal" role="dialog" aria-modal="true" aria-labelledby="new-password-modal-title">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div>
+            <p class="eyebrow">Novo acesso</p>
+            <h2 id="new-password-modal-title">Criar nova senha</h2>
+          </div>
+        </div>
+        <p>Digite uma nova senha para voltar a acessar sua conta.</p>
+        <label>
+          Nova senha
+          <input id="new-password" autocomplete="new-password" placeholder="Minimo de 6 caracteres" type="password" />
+        </label>
+        <label>
+          Confirmar senha
+          <input id="confirm-new-password" autocomplete="new-password" placeholder="Digite novamente" type="password" />
+        </label>
+        <div class="modal-actions">
+          <button class="primary-button" id="save-new-password" type="button">Salvar nova senha</button>
+        </div>
+        <p class="auth-status" id="new-password-status"></p>
+      </div>
+    </div>
+
     <section class="billing-gate is-hidden" id="billing-gate">
       <div class="checkout-card">
         <div>

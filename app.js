@@ -61,6 +61,7 @@ document.querySelector("#forgot-password").addEventListener("click", openPasswor
 document.querySelector("#close-password-modal").addEventListener("click", closePasswordModal);
 document.querySelector("#cancel-password-recovery").addEventListener("click", closePasswordModal);
 document.querySelector("#send-password-recovery").addEventListener("click", recoverPassword);
+document.querySelector("#save-new-password").addEventListener("click", saveNewPassword);
 document.querySelector("#sidebar-toggle").addEventListener("click", toggleSidebar);
 document.querySelector("#client-form").addEventListener("submit", handleClientSubmit);
 document.querySelector("#clear-client-form").addEventListener("click", resetClientForm);
@@ -111,7 +112,23 @@ function saveState() {
 async function initializeApp() {
   resetClientForm();
   render();
+  watchPasswordRecovery();
   await showGateIfNeeded();
+}
+
+function watchPasswordRecovery() {
+  if (!supabaseClient) return;
+
+  supabaseClient.auth.onAuthStateChange((event) => {
+    if (event === "PASSWORD_RECOVERY") {
+      openNewPasswordModal();
+    }
+  });
+
+  const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  if (params.get("type") === "recovery") {
+    openNewPasswordModal();
+  }
 }
 
 async function showGateIfNeeded() {
@@ -310,6 +327,63 @@ async function recoverPassword() {
   }
 
   status.textContent = "Enviamos um link de recuperacao para seu e-mail.";
+}
+
+function openNewPasswordModal() {
+  document.querySelector("#launch-gate").classList.add("is-hidden");
+  document.querySelector("#auth-gate").classList.add("is-hidden");
+  document.querySelector("#billing-gate").classList.add("is-hidden");
+  document.querySelector("#new-password-status").textContent = "";
+  document.querySelector("#new-password").value = "";
+  document.querySelector("#confirm-new-password").value = "";
+  document.querySelector("#new-password-modal").classList.remove("is-hidden");
+  document.querySelector("#new-password").focus();
+}
+
+async function saveNewPassword() {
+  if (!supabaseClient) return;
+
+  const password = document.querySelector("#new-password").value;
+  const confirmation = document.querySelector("#confirm-new-password").value;
+  const status = document.querySelector("#new-password-status");
+  const button = document.querySelector("#save-new-password");
+
+  if (password.length < 6) {
+    status.textContent = "A senha precisa ter pelo menos 6 caracteres.";
+    return;
+  }
+
+  if (password !== confirmation) {
+    status.textContent = "As senhas nao conferem.";
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = "Salvando...";
+  status.textContent = "";
+
+  const { error } = await supabaseClient.auth.updateUser({ password });
+
+  button.disabled = false;
+  button.textContent = "Salvar nova senha";
+
+  if (error) {
+    status.textContent = `Nao foi possivel salvar a senha: ${translateSupabaseError(error.message)}`;
+    return;
+  }
+
+  status.textContent = "Senha alterada com sucesso. Abrindo o app...";
+  window.history.replaceState({}, document.title, window.location.pathname);
+  document.querySelector("#new-password-modal").classList.add("is-hidden");
+  const { data } = await supabaseClient.auth.getUser();
+  currentUserId = data.user?.id || null;
+  if (data.user) {
+    const storeName = data.user.user_metadata?.store_name || data.user.email || "Minha loja";
+    localStorage.setItem(sessionKey, storeName);
+    await ensureUserProfile(data.user, storeName);
+    await loadRemoteState();
+  }
+  showAppOrBilling();
 }
 
 function showAppOrBilling() {
