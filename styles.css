@@ -325,7 +325,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 8px;
   display: grid;
-  gap: 6px;
+  gap: 10px;
   padding: 16px;
 }
 
@@ -354,14 +354,33 @@ button:disabled {
   gap: 14px;
 }
 
-.checkout-actions {
-  display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
 .verify-button {
   justify-self: stretch;
+}
+
+.checkout-selected {
+  align-items: center;
+  background: #fffaf0;
+  border: 1px solid rgba(184, 135, 70, 0.35);
+  border-radius: 8px;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 12px;
+}
+
+.checkout-selected span {
+  color: var(--muted);
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.checkout-selected strong,
+.checkout-selected p {
+  display: block;
+  margin: 0;
 }
 
 .auth-card h1 {
@@ -1223,7 +1242,6 @@ textarea {
   .advanced-toolbar,
   .client-sections,
   .checkout-options,
-  .checkout-actions,
   .charge-summary,
   .charge-meta {
     grid-template-columns: 1fr;
@@ -1275,6 +1293,7 @@ textarea {
   .toolbar,
   .client-card-header,
   .charge-card-header,
+  .checkout-selected,
   .panel-header {
     align-items: stretch;
     flex-direction: column;

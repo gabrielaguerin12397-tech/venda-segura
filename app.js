@@ -21,6 +21,7 @@ let editingClientId = null;
 let filterTimer = null;
 let currentUserId = null;
 let currentProfile = null;
+let selectedCheckoutType = "card";
 
 runtimeStatus.textContent = "Interação ativa";
 runtimeStatus.classList.add("ready");
@@ -74,7 +75,10 @@ document.querySelector("#clear-filters").addEventListener("click", clearFilters)
 document.querySelector("#sign-out").addEventListener("click", signOut);
 document.querySelector("#billing-sign-out").addEventListener("click", signOut);
 document.querySelector("#billing-form").addEventListener("submit", startSubscription);
-document.querySelector("#pix-button").addEventListener("click", startPixPayment);
+document.querySelectorAll("[data-select-checkout]").forEach((button) => {
+  button.addEventListener("click", () => selectCheckoutPlan(button.dataset.selectCheckout));
+});
+document.querySelector("#change-checkout-plan").addEventListener("click", resetCheckoutPlan);
 document.querySelector("#verify-subscription").addEventListener("click", () => verifySubscription());
 document.querySelector("#billing-cpf-cnpj").addEventListener("input", formatBillingDocument);
 document.querySelector("#billing-phone").addEventListener("input", formatBillingPhone);
@@ -670,21 +674,32 @@ async function signOut() {
 
 async function startSubscription(event) {
   event.preventDefault();
+  const isPix = selectedCheckoutType === "pix";
+
   await startCheckout({
-    endpoint: "/api/create-checkout",
-    button: document.querySelector("#subscribe-button"),
-    loadingText: "Abrindo assinatura...",
-    fallbackText: "Assinar com cartao de credito",
+    endpoint: isPix ? "/api/create-pix-checkout" : "/api/create-checkout",
+    button: document.querySelector("#checkout-submit"),
+    loadingText: isPix ? "Gerando Pix..." : "Abrindo assinatura...",
+    fallbackText: isPix ? "Ir para pagamento Pix" : "Ir para checkout do cartao",
   });
 }
 
-async function startPixPayment() {
-  await startCheckout({
-    endpoint: "/api/create-pix-checkout",
-    button: document.querySelector("#pix-button"),
-    loadingText: "Gerando Pix...",
-    fallbackText: "Pagar 30 dias com Pix",
-  });
+function selectCheckoutPlan(type) {
+  selectedCheckoutType = type === "pix" ? "pix" : "card";
+  const isPix = selectedCheckoutType === "pix";
+
+  document.querySelector("#selected-plan-title").textContent = isPix ? "Pix 30 dias" : "Plano mensal";
+  document.querySelector("#selected-plan-description").textContent = isPix
+    ? "Pagamento manual por Pix. O acesso é liberado por 30 dias após a confirmação."
+    : "Assinatura mensal recorrente no cartão de crédito.";
+  document.querySelector("#checkout-submit").textContent = isPix ? "Ir para pagamento Pix" : "Ir para checkout do cartão";
+  document.querySelector("#billing-form").classList.remove("is-hidden");
+  document.querySelector("#billing-form").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function resetCheckoutPlan() {
+  document.querySelector("#billing-form").classList.add("is-hidden");
+  document.querySelector("#billing-status").textContent = "";
 }
 
 async function startCheckout({ endpoint, button, loadingText, fallbackText }) {
