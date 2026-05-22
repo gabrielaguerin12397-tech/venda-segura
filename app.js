@@ -315,7 +315,7 @@ async function recoverPassword() {
   status.textContent = "";
 
   const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin,
+    redirectTo: getAppUrl(),
   });
 
   button.disabled = false;
@@ -338,6 +338,10 @@ function openNewPasswordModal() {
   document.querySelector("#confirm-new-password").value = "";
   document.querySelector("#new-password-modal").classList.remove("is-hidden");
   document.querySelector("#new-password").focus();
+}
+
+function getAppUrl() {
+  return appConfig.siteUrl || window.location.origin;
 }
 
 async function saveNewPassword() {
