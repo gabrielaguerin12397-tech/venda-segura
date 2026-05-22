@@ -1,4 +1,4 @@
-const CACHE_NAME = "venda-segura-v1";
+const CACHE_NAME = "venda-segura-v2";
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -46,4 +46,9 @@ self.addEventListener("fetch", (event) => {
   if (url.origin === self.location.origin) {
     event.respondWith(caches.match(request).then((cached) => cached || fetch(request)));
   }
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(clients.openWindow("/"));
 });

@@ -1,5 +1,7 @@
 const storageKey = "venda-segura";
 const sessionKey = "venda-segura-session";
+const notificationEnabledKey = "venda-segura-notifications-enabled";
+const notificationDateKey = "venda-segura-last-notification-date";
 const appConfig = window.VENDA_SEGURA_CONFIG || {};
 const supabaseClient =
   window.supabase && appConfig.supabaseUrl && appConfig.supabaseAnonKey
@@ -33,17 +35,13 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
 });
 
 const views = {
-  dashboard: document.querySelector("#dashboard-view"),
   clients: document.querySelector("#clients-view"),
   charges: document.querySelector("#charges-view"),
-  messages: document.querySelector("#messages-view"),
 };
 
 const pageTitles = {
-  dashboard: "Painel",
   clients: "Clientes",
   charges: "Cobranças",
-  messages: "Mensagens",
 };
 
 document.querySelectorAll(".nav-item").forEach((button) => {
@@ -72,15 +70,13 @@ document.querySelector("#open-client-search").addEventListener("click", showClie
 );
 document.querySelector("#client-filter").addEventListener("change", renderClients);
 document.querySelector("#clear-filters").addEventListener("click", clearFilters);
-document.querySelector("#save-templates").addEventListener("click", saveTemplates);
 document.querySelector("#sign-out").addEventListener("click", signOut);
 document.querySelector("#billing-sign-out").addEventListener("click", signOut);
 document.querySelector("#billing-form").addEventListener("submit", startSubscription);
 document.querySelector("#billing-cpf-cnpj").addEventListener("input", formatBillingDocument);
 document.querySelector("#billing-phone").addEventListener("input", formatBillingPhone);
+document.querySelector("#enable-notifications").addEventListener("click", enableNotifications);
 
-document.querySelector("#template-reminder").value = state.templates.reminder;
-document.querySelector("#template-late").value = state.templates.late;
 document.querySelector("#workspace-name").value = localStorage.getItem(sessionKey) || "";
 
 initializeApp();
@@ -414,10 +410,9 @@ async function loadRemoteState() {
     ...(templates ? { reminder: templates.reminder, late: templates.late } : {}),
   };
 
-  document.querySelector("#template-reminder").value = state.templates.reminder;
-  document.querySelector("#template-late").value = state.templates.late;
   saveState();
   render();
+  notifyDueChargesOncePerDay();
   setAuthStatus("");
 }
 
@@ -689,6 +684,7 @@ function setView(viewName) {
   Object.values(views).forEach((view) => view.classList.remove("active"));
   views[viewName].classList.add("active");
   document.querySelector("#page-title").textContent = pageTitles[viewName];
+  document.querySelector("#client-actions").classList.toggle("is-hidden", viewName !== "clients");
 
   document.querySelectorAll(".nav-item").forEach((button) => {
     button.classList.toggle("active", button.dataset.view === viewName);
@@ -701,7 +697,6 @@ function hideClientTools() {
 }
 
 function render() {
-  renderDashboard();
   renderClients();
   renderCharges();
 }
@@ -865,45 +860,6 @@ function buildEditedInstallments(client, total, count, firstDueDate) {
   });
 }
 
-function renderDashboard() {
-  const summaries = state.clients.map(getClientSummary);
-  const activeClients = summaries.filter((summary) => summary.openTotal > 0).length;
-  const lateClients = summaries.filter((summary) => summary.lateCount > 0).length;
-  const openTotal = summaries.reduce((sum, summary) => sum + summary.openTotal, 0);
-  const paidTotal = summaries.reduce((sum, summary) => sum + summary.paidTotal, 0);
-
-  document.querySelector("#metric-active-clients").textContent = activeClients;
-  document.querySelector("#metric-late-clients").textContent = lateClients;
-  document.querySelector("#metric-open-total").textContent = money(openTotal);
-  document.querySelector("#metric-paid-total").textContent = money(paidTotal);
-
-  const upcoming = getOpenInstallments()
-    .sort((a, b) => a.installment.dueDate.localeCompare(b.installment.dueDate))
-    .slice(0, 8);
-
-  document.querySelector("#upcoming-rows").innerHTML = upcoming.length
-    ? upcoming.map(renderInstallmentTableRow).join("")
-    : emptyRow("Nenhuma parcela aberta.", 5);
-
-  const late = getOpenInstallments()
-    .filter(({ installment }) => getInstallmentStatus(installment).type === "late")
-    .sort((a, b) => a.installment.dueDate.localeCompare(b.installment.dueDate))
-    .slice(0, 5);
-
-  document.querySelector("#alert-list").innerHTML = late.length
-    ? late
-        .map(
-          ({ client, installment }) => `
-            <div class="alert-item">
-              <strong>${escapeHtml(client.name)} tem parcela em atraso</strong>
-              <span>${money(installment.amount)} vencida em ${formatDate(installment.dueDate)}</span>
-            </div>
-          `,
-        )
-        .join("")
-    : `<div class="empty-state">Nenhum atraso no momento.</div>`;
-}
-
 function renderClients() {
   const query = document.querySelector("#client-search").value.trim().toLowerCase();
   const productQuery = document.querySelector("#product-filter").value.trim().toLowerCase();
@@ -964,52 +920,153 @@ function renderClients() {
 }
 
 function renderCharges() {
+  const charges = getChargeItems();
+  const summary = document.querySelector("#charge-summary");
+  const list = document.querySelector("#charge-list");
+  const todayKey = toInputDate(startOfToday());
+  const lateCount = charges.filter(({ status }) => status.type === "late").length;
+  const todayCount = charges.filter(({ installment }) => installment.dueDate === todayKey).length;
+  const upcomingCount = charges.length - lateCount - todayCount;
+
+  summary.innerHTML = `
+    <div class="charge-summary-card">
+      <span>Atrasadas</span>
+      <strong>${lateCount}</strong>
+    </div>
+    <div class="charge-summary-card">
+      <span>Vencem hoje</span>
+      <strong>${todayCount}</strong>
+    </div>
+    <div class="charge-summary-card">
+      <span>Proximas</span>
+      <strong>${upcomingCount}</strong>
+    </div>
+  `;
+
+  list.innerHTML = charges.length
+    ? charges.map(renderChargeCard).join("")
+    : `<div class="empty-state">Sem cobrancas vencidas ou proximas por enquanto.</div>`;
+
+  list.querySelectorAll("[data-whatsapp]").forEach((button) => {
+    button.addEventListener("click", () => openWhatsApp(button.dataset.clientId, button.dataset.installmentId));
+  });
+
+  list.querySelectorAll("[data-toggle-paid]").forEach((button) => {
+    button.addEventListener("click", () => toggleInstallmentPaid(button.dataset.clientId, button.dataset.installmentId));
+  });
+
+  updateNotificationButton();
+}
+
+function getChargeItems() {
   const today = startOfToday();
   const limit = addDays(today, 3);
-  const charges = getOpenInstallments()
+
+  return getOpenInstallments()
     .filter(({ installment }) => {
       const due = parseInputDate(installment.dueDate);
       return due <= limit;
     })
-    .sort((a, b) => a.installment.dueDate.localeCompare(b.installment.dueDate));
-
-  const body = document.querySelector("#charge-rows");
-  body.innerHTML = charges.length
-    ? charges
-        .map(({ client, installment }) => {
-          return `
-            <tr>
-              <td>${escapeHtml(client.name)}</td>
-              <td>${formatPhone(client.phone)}</td>
-              <td>${installment.number}/${client.installments.length}</td>
-              <td>${formatDate(installment.dueDate)}</td>
-              <td>${money(installment.amount)}</td>
-              <td>
-                <button class="small-button action-whatsapp" data-whatsapp="${client.id}" data-client-id="${client.id}" data-installment-id="${installment.id}" type="button">WhatsApp</button>
-              </td>
-            </tr>
-          `;
-        })
-        .join("")
-    : emptyRow("Sem cobranças para hoje.", 6);
-
-  body.querySelectorAll("[data-whatsapp]").forEach((button) => {
-    button.addEventListener("click", () => openWhatsApp(button.dataset.clientId, button.dataset.installmentId));
-  });
+    .sort((a, b) => a.installment.dueDate.localeCompare(b.installment.dueDate))
+    .map(({ client, installment }) => ({ client, installment, status: getInstallmentStatus(installment) }));
 }
 
-function renderInstallmentTableRow({ client, installment }) {
-  const status = getInstallmentStatus(installment);
+function renderChargeCard({ client, installment, status }) {
+  const todayKey = toInputDate(startOfToday());
+  const cardType = status.type === "late" ? "late" : installment.dueDate === todayKey ? "today" : "upcoming";
+  const label = status.type === "late" ? "Atrasada" : installment.dueDate === todayKey ? "Vence hoje" : "Proxima";
 
   return `
-    <tr>
-      <td>${escapeHtml(client.name)}</td>
-      <td>${installment.number}/${client.installments.length}</td>
-      <td>${formatDate(installment.dueDate)}</td>
-      <td>${money(installment.amount)}</td>
-      <td><span class="status-pill ${status.className}">${status.label}</span></td>
-    </tr>
+    <article class="charge-card ${cardType}">
+      <div class="charge-card-header">
+        <div>
+          <h3>${escapeHtml(client.name)}</h3>
+          <p>${formatPhone(client.phone)} · ${escapeHtml(client.product)}</p>
+        </div>
+        <span class="status-pill ${status.className}">${label}</span>
+      </div>
+
+      <div class="charge-meta">
+        <div><span>Parcela</span><strong>${installment.number}/${client.installments.length}</strong></div>
+        <div><span>Vencimento</span><strong>${formatDate(installment.dueDate)}</strong></div>
+        <div><span>Valor</span><strong>${money(installment.amount)}</strong></div>
+        <div><span>Status</span><strong>${status.label}</strong></div>
+      </div>
+
+      <div class="charge-card-actions">
+        <button class="small-button action-whatsapp" data-whatsapp data-client-id="${client.id}" data-installment-id="${installment.id}" type="button">Enviar WhatsApp</button>
+        <button class="small-button action-payment" data-toggle-paid data-client-id="${client.id}" data-installment-id="${installment.id}" type="button">Marcar pago</button>
+      </div>
+    </article>
   `;
+}
+
+async function enableNotifications() {
+  if (!("Notification" in window)) {
+    alert("Este navegador nao permite notificacoes.");
+    return;
+  }
+
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") {
+    alert("Permissao de notificacao nao foi liberada.");
+    return;
+  }
+
+  localStorage.setItem(notificationEnabledKey, "true");
+  updateNotificationButton();
+  await notifyDueChargesOncePerDay(true);
+}
+
+function updateNotificationButton() {
+  const button = document.querySelector("#enable-notifications");
+  if (!button) return;
+
+  const enabled = "Notification" in window && localStorage.getItem(notificationEnabledKey) === "true" && Notification.permission === "granted";
+  button.textContent = enabled ? "Notificacoes ativas" : "Ativar notificacoes";
+}
+
+async function notifyDueChargesOncePerDay(force = false) {
+  if (!("Notification" in window)) return;
+  if (Notification.permission !== "granted") return;
+  if (localStorage.getItem(notificationEnabledKey) !== "true") return;
+
+  const todayKey = toInputDate(startOfToday());
+  if (!force && localStorage.getItem(notificationDateKey) === todayKey) return;
+
+  const charges = getChargeItems().filter(({ installment, status }) => status.type === "late" || installment.dueDate === todayKey);
+  if (!charges.length) {
+    if (force) {
+      await showAppNotification("Venda Segura", "Notificacoes ativadas. Nenhuma cobranca vence hoje.");
+    }
+    return;
+  }
+
+  localStorage.setItem(notificationDateKey, todayKey);
+  const lateCount = charges.filter(({ status }) => status.type === "late").length;
+  const todayCount = charges.length - lateCount;
+  const parts = [];
+  if (lateCount) parts.push(`${lateCount} atrasada${lateCount > 1 ? "s" : ""}`);
+  if (todayCount) parts.push(`${todayCount} vencendo hoje`);
+
+  await showAppNotification("Cobrancas para acompanhar", `Voce tem ${parts.join(" e ")} no Venda Segura.`);
+}
+
+async function showAppNotification(title, body) {
+  const options = {
+    body,
+    badge: "/icons/icon-192.svg",
+    icon: "/icons/icon-192.svg",
+    tag: "venda-segura-cobrancas",
+  };
+
+  if ("serviceWorker" in navigator) {
+    const registration = await navigator.serviceWorker.ready;
+    await registration.showNotification(title, options);
+    return;
+  }
+
+  new Notification(title, options);
 }
 
 function renderClientCard(client) {
@@ -1256,14 +1313,6 @@ async function toggleInstallmentPaid(clientId, installmentId) {
   render();
 }
 
-async function saveTemplates() {
-  state.templates.reminder = document.querySelector("#template-reminder").value.trim() || defaultTemplates.reminder;
-  state.templates.late = document.querySelector("#template-late").value.trim() || defaultTemplates.late;
-  saveState();
-  await syncRemoteState();
-  alert("Mensagens salvas.");
-}
-
 function exportData() {
   const payload = {
     app: "Venda Segura",
@@ -1294,8 +1343,6 @@ function importData(event) {
       const imported = parsed.data || parsed;
       state.clients = (imported.clients || []).map(normalizeClient);
       state.templates = { ...defaultTemplates, ...(imported.templates || {}) };
-      document.querySelector("#template-reminder").value = state.templates.reminder;
-      document.querySelector("#template-late").value = state.templates.late;
       saveState();
       await syncRemoteState();
       render();
