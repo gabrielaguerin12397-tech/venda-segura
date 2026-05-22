@@ -13,6 +13,11 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <div class="update-banner is-hidden" id="update-banner">
+      <span>Nova versao disponivel.</span>
+      <button class="small-button" id="refresh-app" type="button">Atualizar</button>
+    </div>
+
     <section class="launch-gate" id="launch-gate">
       <div class="launch-copy">
         <p class="eyebrow">Para quem vende fiado ou parcelado</p>
@@ -345,7 +350,41 @@
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
-          navigator.serviceWorker.register("service-worker.js").then((registration) => registration.update());
+          navigator.serviceWorker.register("service-worker.js").then((registration) => {
+            let refreshing = false;
+            const banner = document.querySelector("#update-banner");
+            const refreshButton = document.querySelector("#refresh-app");
+
+            navigator.serviceWorker.addEventListener("controllerchange", () => {
+              if (refreshing) return;
+              refreshing = true;
+              window.location.reload();
+            });
+
+            function showUpdateBanner(worker) {
+              banner.classList.remove("is-hidden");
+              refreshButton.onclick = () => {
+                worker.postMessage({ type: "SKIP_WAITING" });
+              };
+            }
+
+            if (registration.waiting) {
+              showUpdateBanner(registration.waiting);
+            }
+
+            registration.addEventListener("updatefound", () => {
+              const newWorker = registration.installing;
+              if (!newWorker) return;
+
+              newWorker.addEventListener("statechange", () => {
+                if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+                  showUpdateBanner(newWorker);
+                }
+              });
+            });
+
+            registration.update();
+          });
         });
       }
     </script>

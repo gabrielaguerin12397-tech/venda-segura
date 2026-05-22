@@ -31,6 +31,34 @@ body {
   display: none !important;
 }
 
+.update-banner {
+  align-items: center;
+  background: #233946;
+  border: 1px solid rgba(217, 176, 111, 0.5);
+  border-radius: 8px;
+  bottom: 16px;
+  box-shadow: 0 18px 45px rgba(33, 49, 58, 0.18);
+  color: #ffffff;
+  display: flex;
+  gap: 12px;
+  left: 50%;
+  padding: 10px 12px;
+  position: fixed;
+  transform: translateX(-50%);
+  z-index: 30;
+}
+
+.update-banner span {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.update-banner .small-button {
+  background: #f7f6f1;
+  border-color: #d9b06f;
+  color: #233946;
+}
+
 button,
 input,
 select,
@@ -1162,6 +1190,13 @@ textarea {
 }
 
 @media (max-width: 680px) {
+  .update-banner {
+    bottom: 12px;
+    left: 14px;
+    right: 14px;
+    transform: none;
+  }
+
   .launch-gate {
     padding: 18px 14px;
   }

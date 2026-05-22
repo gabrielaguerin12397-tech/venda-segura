@@ -1,4 +1,4 @@
-const CACHE_NAME = "venda-segura-v3";
+const CACHE_NAME = "venda-segura-v4";
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -16,8 +16,7 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(CACHE_NAME)
-      .then((cache) => cache.addAll(APP_SHELL))
-      .then(() => self.skipWaiting()),
+      .then((cache) => cache.addAll(APP_SHELL)),
   );
 });
 
@@ -59,4 +58,10 @@ self.addEventListener("fetch", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   event.waitUntil(clients.openWindow("/"));
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
