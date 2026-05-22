@@ -74,6 +74,7 @@ document.querySelector("#clear-filters").addEventListener("click", clearFilters)
 document.querySelector("#sign-out").addEventListener("click", signOut);
 document.querySelector("#billing-sign-out").addEventListener("click", signOut);
 document.querySelector("#billing-form").addEventListener("submit", startSubscription);
+document.querySelector("#verify-subscription").addEventListener("click", () => verifySubscription());
 document.querySelector("#billing-cpf-cnpj").addEventListener("input", formatBillingDocument);
 document.querySelector("#billing-phone").addEventListener("input", formatBillingPhone);
 document.querySelector("#enable-notifications").addEventListener("click", enableNotifications);
@@ -168,7 +169,7 @@ async function showGateIfNeeded() {
     await ensureUserProfile(user, storeName);
     await loadRemoteState();
     showAppOrBilling();
-    handleCheckoutReturn();
+    await handleCheckoutReturn();
     return;
   }
 
@@ -415,7 +416,7 @@ function showAppOrBilling() {
   showBillingGate();
 }
 
-function handleCheckoutReturn() {
+async function handleCheckoutReturn() {
   const checkoutStatus = getCheckoutStatus();
   if (!checkoutStatus) return;
 
@@ -423,6 +424,7 @@ function handleCheckoutReturn() {
     if (hasSubscriptionAccess()) {
       showToast("Pagamento confirmado. Sua assinatura esta ativa.", "success");
     } else {
+      await verifySubscription({ silent: true });
       showToast("Pagamento enviado. Estamos aguardando a confirmacao do Asaas.", "warning");
     }
   }
@@ -730,6 +732,70 @@ async function startSubscription(event) {
   } finally {
     button.disabled = false;
     button.textContent = "Assinar agora";
+  }
+}
+
+async function verifySubscription(options = {}) {
+  const button = document.querySelector("#verify-subscription");
+  const status = document.querySelector("#billing-status");
+
+  try {
+    if (!options.silent) {
+      button.disabled = true;
+      button.textContent = "Verificando...";
+      status.textContent = "Consultando o Asaas...";
+    }
+
+    const { data } = await supabaseClient.auth.getSession();
+    const accessToken = data.session?.access_token;
+
+    if (!accessToken) {
+      status.textContent = "Entre novamente para verificar sua assinatura.";
+      return;
+    }
+
+    const response = await fetch("/api/verify-subscription", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    const payload = await readJsonResponse(response);
+
+    if (!response.ok) {
+      status.textContent = payload.error || "Nao foi possivel verificar a assinatura.";
+      return;
+    }
+
+    await loadRemoteState();
+
+    if (payload.status === "active") {
+      showApp();
+      showToast("Pagamento confirmado. Sua assinatura esta ativa.", "success");
+      return;
+    }
+
+    if (payload.status === "past_due") {
+      status.textContent = "Encontramos uma pendencia no pagamento. Confira no Asaas ou tente outro cartao.";
+      return;
+    }
+
+    if (payload.status === "blocked") {
+      status.textContent = "O pagamento nao foi aprovado. Tente assinar novamente com outro cartao de credito.";
+      return;
+    }
+
+    status.textContent =
+      payload.message || "O pagamento ainda esta aguardando confirmacao do Asaas. Tente novamente em alguns minutos.";
+  } catch {
+    status.textContent = "Nao foi possivel verificar agora. Confira sua conexao e tente novamente.";
+  } finally {
+    if (!options.silent) {
+      button.disabled = false;
+      button.textContent = "Ja paguei, verificar assinatura";
+    }
   }
 }
 
