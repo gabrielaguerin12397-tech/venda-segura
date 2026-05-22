@@ -8,15 +8,17 @@
     <meta name="apple-mobile-web-app-title" content="Venda Segura" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>Venda Segura</title>
-    <link rel="manifest" href="manifest.webmanifest?v=6" />
-    <link rel="apple-touch-icon" href="icons/icon-192.svg?v=6" />
-    <link rel="stylesheet" href="styles.css?v=6" />
+    <link rel="manifest" href="manifest.webmanifest?v=7" />
+    <link rel="apple-touch-icon" href="icons/icon-192.svg?v=7" />
+    <link rel="stylesheet" href="styles.css?v=7" />
   </head>
   <body>
     <div class="update-banner is-hidden" id="update-banner">
       <span>Nova versao disponivel.</span>
       <button class="small-button" id="refresh-app" type="button">Atualizar</button>
     </div>
+
+    <div class="app-toast is-hidden" id="app-toast" role="status"></div>
 
     <section class="launch-gate" id="launch-gate">
       <div class="launch-copy">
@@ -345,8 +347,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js?v=6"></script>
-    <script src="app.js?v=6"></script>
+    <script src="config.js?v=7"></script>
+    <script src="app.js?v=7"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {

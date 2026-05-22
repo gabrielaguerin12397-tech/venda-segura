@@ -26,6 +26,7 @@ module.exports = async function handler(request, response) {
     const city = String(request.body?.city || "").trim();
     const state = String(request.body?.state || "").trim().toUpperCase();
     const origin = request.headers.origin || `https://${request.headers.host}`;
+    const callbackBaseUrl = getCallbackBaseUrl(origin);
 
     if (!isValidCpfCnpj(cpfCnpj)) {
       return response.status(400).json({ error: "Informe um CPF ou CNPJ valido para assinar." });
@@ -51,9 +52,9 @@ module.exports = async function handler(request, response) {
         minutesToExpire: 1440,
         externalReference: user.id,
         callback: {
-          successUrl: origin,
-          cancelUrl: origin,
-          expiredUrl: origin,
+          successUrl: `${callbackBaseUrl}?checkout=success`,
+          cancelUrl: `${callbackBaseUrl}?checkout=cancel`,
+          expiredUrl: `${callbackBaseUrl}?checkout=expired`,
         },
         items: [
           {
@@ -110,6 +111,10 @@ function assertEnv(names) {
   if (missing.length) {
     throw new Error(`Variaveis ausentes na Vercel: ${missing.join(", ")}`);
   }
+}
+
+function getCallbackBaseUrl(origin) {
+  return (process.env.APP_URL || origin).replace(/\/$/, "");
 }
 
 function getBearerToken(request) {

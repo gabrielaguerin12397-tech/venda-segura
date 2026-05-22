@@ -113,6 +113,7 @@ async function initializeApp() {
   resetClientForm();
   render();
   watchPasswordRecovery();
+  if (await handlePasswordRecoveryUrl()) return;
   await showGateIfNeeded();
 }
 
@@ -124,11 +125,24 @@ function watchPasswordRecovery() {
       openNewPasswordModal();
     }
   });
+}
 
-  const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-  if (params.get("type") === "recovery") {
-    openNewPasswordModal();
+async function handlePasswordRecoveryUrl() {
+  if (!supabaseClient || !isPasswordRecoveryUrl()) return false;
+
+  const code = new URLSearchParams(window.location.search).get("code");
+  if (code) {
+    await supabaseClient.auth.exchangeCodeForSession(code);
   }
+
+  openNewPasswordModal();
+  return true;
+}
+
+function isPasswordRecoveryUrl() {
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const searchParams = new URLSearchParams(window.location.search);
+  return hashParams.get("type") === "recovery" || searchParams.get("type") === "recovery" || searchParams.has("code");
 }
 
 async function showGateIfNeeded() {
@@ -154,6 +168,7 @@ async function showGateIfNeeded() {
     await ensureUserProfile(user, storeName);
     await loadRemoteState();
     showAppOrBilling();
+    handleCheckoutReturn();
     return;
   }
 
@@ -333,6 +348,7 @@ function openNewPasswordModal() {
   document.querySelector("#launch-gate").classList.add("is-hidden");
   document.querySelector("#auth-gate").classList.add("is-hidden");
   document.querySelector("#billing-gate").classList.add("is-hidden");
+  document.querySelector("#app-shell").classList.add("is-hidden");
   document.querySelector("#new-password-status").textContent = "";
   document.querySelector("#new-password").value = "";
   document.querySelector("#confirm-new-password").value = "";
@@ -399,15 +415,80 @@ function showAppOrBilling() {
   showBillingGate();
 }
 
+function handleCheckoutReturn() {
+  const checkoutStatus = getCheckoutStatus();
+  if (!checkoutStatus) return;
+
+  if (checkoutStatus === "success") {
+    if (hasSubscriptionAccess()) {
+      showToast("Pagamento confirmado. Sua assinatura esta ativa.", "success");
+    } else {
+      showToast("Pagamento enviado. Estamos aguardando a confirmacao do Asaas.", "warning");
+    }
+  }
+
+  if (checkoutStatus === "cancel") {
+    showToast("Checkout cancelado. Nenhuma cobranca foi confirmada.", "danger");
+  }
+
+  if (checkoutStatus === "expired") {
+    showToast("O checkout expirou. Gere um novo link para assinar.", "danger");
+  }
+
+  window.history.replaceState({}, document.title, window.location.pathname);
+}
+
+function getCheckoutStatus() {
+  const status = new URLSearchParams(window.location.search).get("checkout");
+  return ["success", "cancel", "expired"].includes(status) ? status : "";
+}
+
+function showToast(message, type = "success") {
+  const toast = document.querySelector("#app-toast");
+  if (!toast) return;
+
+  toast.textContent = message;
+  toast.className = `app-toast ${type}`;
+  window.clearTimeout(showToast.timer);
+  showToast.timer = window.setTimeout(() => {
+    toast.classList.add("is-hidden");
+  }, 7000);
+}
+
 function showBillingGate() {
   document.querySelector("#launch-gate").classList.add("is-hidden");
   document.querySelector("#auth-gate").classList.add("is-hidden");
   document.querySelector("#billing-gate").classList.remove("is-hidden");
   document.querySelector("#app-shell").classList.add("is-hidden");
-  document.querySelector("#billing-message").textContent =
-    currentProfile?.subscription_status === "past_due"
-      ? "Identificamos uma pendencia na assinatura. Regularize para continuar usando."
-      : "Seu periodo de teste terminou. Assine o Plano Essencial para continuar usando.";
+  document.querySelector("#billing-message").textContent = getBillingMessage();
+}
+
+function getBillingMessage() {
+  const checkoutStatus = getCheckoutStatus();
+
+  if (checkoutStatus === "success") {
+    return currentProfile?.subscription_status === "pending"
+      ? "Recebemos seu retorno do checkout. Seu pagamento ainda esta em confirmacao pelo Asaas; assim que confirmar, o acesso sera liberado automaticamente."
+      : "Pagamento recebido. Estamos confirmando sua assinatura.";
+  }
+
+  if (checkoutStatus === "cancel") {
+    return "O checkout foi cancelado. Voce pode tentar assinar novamente quando quiser.";
+  }
+
+  if (checkoutStatus === "expired") {
+    return "O link do checkout expirou. Gere uma nova assinatura para continuar.";
+  }
+
+  if (currentProfile?.subscription_status === "pending") {
+    return "Sua assinatura esta aguardando confirmacao de pagamento pelo Asaas.";
+  }
+
+  if (currentProfile?.subscription_status === "past_due") {
+    return "Identificamos uma pendencia na assinatura. Regularize para continuar usando.";
+  }
+
+  return "Seu periodo de teste terminou. Assine o Plano Essencial para continuar usando.";
 }
 
 function hasSubscriptionAccess() {

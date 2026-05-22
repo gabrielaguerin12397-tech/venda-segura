@@ -1,15 +1,15 @@
-const CACHE_NAME = "venda-segura-v6";
+const CACHE_NAME = "venda-segura-v7";
 const APP_SHELL = [
   "/",
   "/index.html",
-  "/styles.css?v=6",
-  "/app.js?v=6",
-  "/config.js?v=6",
-  "/manifest.webmanifest?v=6",
+  "/styles.css?v=7",
+  "/app.js?v=7",
+  "/config.js?v=7",
+  "/manifest.webmanifest?v=7",
   "/termos.html",
   "/privacidade.html",
-  "/icons/icon-192.svg?v=6",
-  "/icons/icon-512.svg?v=6",
+  "/icons/icon-192.svg?v=7",
+  "/icons/icon-512.svg?v=7",
 ];
 
 self.addEventListener("install", (event) => {
