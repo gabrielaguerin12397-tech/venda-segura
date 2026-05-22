@@ -46,7 +46,7 @@ module.exports = async function handler(request, response) {
         access_token: process.env.ASAAS_API_KEY,
       },
       body: JSON.stringify({
-        billingTypes: ["CREDIT_CARD"],
+        billingTypes: ["CREDIT_CARD", "PIX"],
         chargeTypes: ["RECURRENT"],
         minutesToExpire: 1440,
         externalReference: user.id,
