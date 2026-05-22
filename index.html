@@ -8,9 +8,9 @@
     <meta name="apple-mobile-web-app-title" content="Venda Segura" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>Venda Segura</title>
-    <link rel="manifest" href="manifest.webmanifest?v=10" />
-    <link rel="apple-touch-icon" href="icons/icon-192.svg?v=10" />
-    <link rel="stylesheet" href="styles.css?v=10" />
+    <link rel="manifest" href="manifest.webmanifest?v=11" />
+    <link rel="apple-touch-icon" href="icons/icon-192.svg?v=11" />
+    <link rel="stylesheet" href="styles.css?v=11" />
   </head>
   <body>
     <div class="update-banner is-hidden" id="update-banner">
@@ -155,10 +155,17 @@
           <p id="billing-message">Preencha seus dados para seguir ao checkout seguro do Asaas.</p>
         </div>
 
-        <div class="checkout-summary">
-          <span>Plano Essencial</span>
-          <strong>R$ 29,90/mês</strong>
-          <p>Assinatura mensal recorrente no cartao de credito pelo checkout seguro do Asaas.</p>
+        <div class="checkout-options">
+          <section class="checkout-option featured">
+            <span>Plano mensal</span>
+            <strong>R$ 29,90/mês</strong>
+            <p>Cobrança recorrente no cartão de crédito. Ideal para não se preocupar com renovação.</p>
+          </section>
+          <section class="checkout-option">
+            <span>Pix 30 dias</span>
+            <strong>R$ 29,90</strong>
+            <p>Pagamento manual por Pix. O acesso é liberado por 30 dias após a confirmação.</p>
+          </section>
         </div>
 
         <form id="billing-form" class="checkout-form">
@@ -201,9 +208,11 @@
             </label>
           </div>
 
-          <button class="primary-button" id="subscribe-button" type="submit">Assinar com cartao de credito</button>
-          <button class="ghost-button" id="pix-button" type="button">Pagar 30 dias com Pix</button>
-          <button class="ghost-button" id="verify-subscription" type="button">Ja paguei, verificar assinatura</button>
+          <div class="checkout-actions">
+            <button class="primary-button" id="subscribe-button" type="submit">Assinar com cartão de crédito</button>
+            <button class="ghost-button" id="pix-button" type="button">Pagar 30 dias com Pix</button>
+          </div>
+          <button class="ghost-button verify-button" id="verify-subscription" type="button">Já paguei, verificar assinatura</button>
           <button class="ghost-button" id="billing-sign-out" type="button">Sair</button>
           <p class="auth-status" id="billing-status"></p>
         </form>
@@ -349,8 +358,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js?v=10"></script>
-    <script src="app.js?v=10"></script>
+    <script src="config.js?v=11"></script>
+    <script src="app.js?v=11"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {

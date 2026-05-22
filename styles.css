@@ -314,31 +314,54 @@ button:disabled {
   line-height: 1.45;
 }
 
-.checkout-summary {
-  background: var(--surface-strong);
-  border-radius: 8px;
+.checkout-options {
   display: grid;
-  gap: 4px;
-  padding: 14px;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.checkout-summary span {
+.checkout-option {
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+}
+
+.checkout-option.featured {
+  background: #eef3f1;
+  border-color: rgba(49, 91, 109, 0.32);
+}
+
+.checkout-option span {
   color: var(--muted);
   font-size: 13px;
   font-weight: 800;
+  text-transform: uppercase;
 }
 
-.checkout-summary strong {
+.checkout-option strong {
   font-size: 28px;
 }
 
-.checkout-summary p {
+.checkout-option p {
   margin: 0;
 }
 
 .checkout-form {
   display: grid;
   gap: 14px;
+}
+
+.checkout-actions {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.verify-button {
+  justify-self: stretch;
 }
 
 .auth-card h1 {
@@ -1199,6 +1222,8 @@ textarea {
   .message-layout,
   .advanced-toolbar,
   .client-sections,
+  .checkout-options,
+  .checkout-actions,
   .charge-summary,
   .charge-meta {
     grid-template-columns: 1fr;
