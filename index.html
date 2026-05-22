@@ -8,9 +8,9 @@
     <meta name="apple-mobile-web-app-title" content="Venda Segura" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>Venda Segura</title>
-    <link rel="manifest" href="manifest.webmanifest?v=7" />
-    <link rel="apple-touch-icon" href="icons/icon-192.svg?v=7" />
-    <link rel="stylesheet" href="styles.css?v=7" />
+    <link rel="manifest" href="manifest.webmanifest?v=9" />
+    <link rel="apple-touch-icon" href="icons/icon-192.svg?v=9" />
+    <link rel="stylesheet" href="styles.css?v=9" />
   </head>
   <body>
     <div class="update-banner is-hidden" id="update-banner">
@@ -158,7 +158,7 @@
         <div class="checkout-summary">
           <span>Plano Essencial</span>
           <strong>R$ 29,90/mês</strong>
-          <p>Assinatura mensal com cartao de credito ou Pix pelo checkout seguro do Asaas.</p>
+          <p>Assinatura mensal recorrente no cartao de credito pelo checkout seguro do Asaas.</p>
         </div>
 
         <form id="billing-form" class="checkout-form">
@@ -202,6 +202,7 @@
           </div>
 
           <button class="primary-button" id="subscribe-button" type="submit">Ir para checkout seguro</button>
+          <button class="ghost-button" id="verify-subscription" type="button">Ja paguei, verificar assinatura</button>
           <button class="ghost-button" id="billing-sign-out" type="button">Sair</button>
           <p class="auth-status" id="billing-status"></p>
         </form>
@@ -347,8 +348,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js?v=7"></script>
-    <script src="app.js?v=7"></script>
+    <script src="config.js?v=9"></script>
+    <script src="app.js?v=9"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
