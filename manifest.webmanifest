@@ -2,6 +2,7 @@
   "name": "Venda Segura",
   "short_name": "Venda Segura",
   "description": "Controle de clientes, parcelas e cobrancas para vendedores que trabalham com crediario.",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -10,6 +11,18 @@
   "theme_color": "#315b6d",
   "categories": ["business", "finance", "productivity"],
   "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
     {
       "src": "/icons/icon-192.svg",
       "sizes": "192x192",
