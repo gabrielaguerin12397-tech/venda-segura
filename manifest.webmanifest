@@ -2,26 +2,44 @@
   "name": "Venda Segura",
   "short_name": "Venda Segura",
   "description": "Controle de clientes, parcelas e cobrancas para vendedores que trabalham com crediario.",
-  "id": "/",
-  "start_url": "/",
-  "scope": "/",
+  "id": "https://appvendasegura.com.br/",
+  "start_url": "https://appvendasegura.com.br/",
+  "scope": "https://appvendasegura.com.br/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#f7f6f1",
   "theme_color": "#315b6d",
   "categories": ["business", "finance", "productivity"],
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "screenshots": [
+    {
+      "src": "/icons/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Página inicial do Venda Segura"
+    },
+    {
+      "src": "/icons/screenshot-mobile.png",
+      "sizes": "720x1280",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Prévia do app no celular"
+    }
+  ],
   "icons": [
     {
       "src": "/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     },
     {
       "src": "/icons/icon-192.svg",
