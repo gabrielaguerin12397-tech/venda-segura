@@ -239,6 +239,11 @@ async function createAccount() {
     return;
   }
 
+  if (!document.querySelector("#accept-terms-signup").checked) {
+    setAuthStatus("Voce precisa aceitar os Termos de uso para criar a conta.");
+    return;
+  }
+
   setAuthStatus("Criando conta...");
   const { data, error } = await supabaseClient.auth.signUp({
     email,
@@ -296,6 +301,7 @@ function showAuthPage(mode) {
     ? "Entre para acessar seus clientes, parcelas e mensagens salvas."
     : "Teste gratis e organize seus clientes, parcelas e cobrancas em uma conta segura.";
   document.querySelector("#workspace-name").closest("label").classList.toggle("is-hidden", isLogin);
+  document.querySelector("#terms-signup-row").classList.toggle("is-hidden", isLogin);
   document.querySelector("#create-account").classList.toggle("is-hidden", isLogin);
   document.querySelector("#forgot-password").classList.toggle("is-hidden", !isLogin);
   document.querySelector("#enter-app").textContent = isLogin ? "Entrar" : "Ja tenho conta";
@@ -706,6 +712,12 @@ async function startCheckout({ endpoint, button, loadingText, fallbackText }) {
   const status = document.querySelector("#billing-status");
   const cpfCnpj = normalizeCpfCnpj(document.querySelector("#billing-cpf-cnpj").value);
   const phoneNumber = normalizeBrazilPhone(document.querySelector("#billing-phone").value);
+
+  if (!document.querySelector("#accept-terms-billing").checked) {
+    status.textContent = "Aceite os Termos de uso antes de continuar.";
+    document.querySelector("#accept-terms-billing").focus();
+    return;
+  }
 
   if (!isValidCpfCnpj(cpfCnpj)) {
     status.textContent = "Informe um CPF ou CNPJ valido.";

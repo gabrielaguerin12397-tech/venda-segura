@@ -1,5 +1,5 @@
 const ASAAS_API_URL = process.env.ASAAS_API_URL || "https://api.asaas.com/v3";
-const PLAN_VALUE = 29.9;
+const PLAN_VALUE = 19.99;
 
 module.exports = async function handler(request, response) {
   if (request.method !== "POST") {

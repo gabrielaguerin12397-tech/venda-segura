@@ -402,6 +402,25 @@ button:disabled {
   text-decoration: none;
 }
 
+.checkbox-label {
+  align-items: start;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto 1fr;
+  line-height: 1.4;
+}
+
+.checkbox-label input {
+  min-height: auto;
+  margin-top: 3px;
+  width: auto;
+}
+
+.checkbox-label a {
+  color: var(--primary);
+  font-weight: 800;
+}
+
 .auth-gate,
 .billing-gate {
   align-items: center;

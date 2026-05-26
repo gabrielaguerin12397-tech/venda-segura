@@ -11,9 +11,9 @@
     <link rel="icon" href="icons/favicon.svg?v=16" type="image/svg+xml" />
     <link rel="icon" href="icons/favicon.png?v=16" type="image/png" />
     <link rel="shortcut icon" href="icons/favicon.svg?v=16" type="image/svg+xml" />
-    <link rel="manifest" href="manifest.webmanifest?v=19" />
+    <link rel="manifest" href="manifest.webmanifest?v=20" />
     <link rel="apple-touch-icon" href="icons/icon-192.png?v=16" />
-    <link rel="stylesheet" href="styles.css?v=18" />
+    <link rel="stylesheet" href="styles.css?v=20" />
   </head>
   <body>
     <div class="update-banner is-hidden" id="update-banner">
@@ -76,7 +76,7 @@
 
       <div class="launch-panel">
         <p class="plan-label">Comece agora</p>
-        <strong class="plan-price">R$ 29,90/mês</strong>
+        <strong class="plan-price">R$ 19,99/mês</strong>
         <p class="plan-note">Feito para quem vende fiado, parcelado ou no crediário e precisa saber exatamente quem deve, quanto deve e quando vence.</p>
         <ul class="plan-list">
           <li>Cadastre clientes, compras e parcelas</li>
@@ -112,6 +112,10 @@
         <label>
           Senha
           <input id="auth-password" autocomplete="current-password" placeholder="Minimo de 6 caracteres" type="password" />
+        </label>
+        <label class="checkbox-label" id="terms-signup-row">
+          <input id="accept-terms-signup" type="checkbox" />
+          <span>Li e aceito os <a href="termos.html" target="_blank" rel="noopener">Termos de uso</a> e a <a href="privacidade.html" target="_blank" rel="noopener">Política de privacidade</a>.</span>
         </label>
         <div class="auth-actions">
           <button class="primary-button" id="create-account" type="button">Criar conta e testar gratis</button>
@@ -183,13 +187,13 @@
         <div class="checkout-options">
           <section class="checkout-option featured">
             <span>Plano mensal</span>
-            <strong>R$ 29,90/mês</strong>
+            <strong>R$ 19,99/mês</strong>
             <p>Cobrança recorrente no cartão de crédito. Ideal para não se preocupar com renovação.</p>
             <button class="primary-button" data-select-checkout="card" type="button">Escolher cartão de crédito</button>
           </section>
           <section class="checkout-option">
             <span>Pix 30 dias</span>
-            <strong>R$ 29,90</strong>
+            <strong>R$ 19,99</strong>
             <p>Pagamento manual por Pix. O acesso é liberado por 30 dias após a confirmação.</p>
             <button class="ghost-button" data-select-checkout="pix" type="button">Escolher Pix 30 dias</button>
           </section>
@@ -242,6 +246,11 @@
               <input id="billing-state" autocomplete="address-level1" maxlength="2" required placeholder="UF" />
             </label>
           </div>
+
+          <label class="checkbox-label">
+            <input id="accept-terms-billing" type="checkbox" />
+            <span>Li e aceito os <a href="termos.html" target="_blank" rel="noopener">Termos de uso</a> e autorizo a continuidade do pagamento escolhido.</span>
+          </label>
 
           <button class="primary-button" id="checkout-submit" type="submit">Continuar</button>
           <button class="ghost-button verify-button" id="verify-subscription" type="button">Já paguei, verificar assinatura</button>
@@ -390,8 +399,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js?v=18"></script>
-    <script src="app.js?v=18"></script>
+    <script src="config.js?v=20"></script>
+    <script src="app.js?v=20"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
