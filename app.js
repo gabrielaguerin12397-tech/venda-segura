@@ -281,7 +281,7 @@ function trackSignupConversion() {
   if (typeof gtag !== "function") return;
 
   gtag("event", "sign_up", {
-    send_to: "AW-17992409108",
+    send_to: "AW-17992409108/pMAzCNOprzQcEJTAuYND",
   });
 }
 
