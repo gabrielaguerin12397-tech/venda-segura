@@ -268,11 +268,21 @@ async function createAccount() {
       await ensureUserProfile(data.user, name);
       await loadRemoteState();
     }
+    trackSignupConversion();
     showAppOrBilling();
     return;
   }
 
+  trackSignupConversion();
   setAuthStatus("Conta criada. Se o Supabase pedir confirmacao, confira seu e-mail antes de entrar.");
+}
+
+function trackSignupConversion() {
+  if (typeof gtag !== "function") return;
+
+  gtag("event", "sign_up", {
+    send_to: "AW-17992409108",
+  });
 }
 
 function showApp() {
