@@ -5,6 +5,30 @@
     {
       "source": "/",
       "destination": "/index.html"
+    },
+    {
+      "source": "/como-funciona",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/planos",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/seguranca",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/teste-gratis",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/cadastro",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/index.html"
     }
   ]
 }

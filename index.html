@@ -11,9 +11,9 @@
     <link rel="icon" href="icons/favicon.svg?v=16" type="image/svg+xml" />
     <link rel="icon" href="icons/favicon.png?v=16" type="image/png" />
     <link rel="shortcut icon" href="icons/favicon.svg?v=16" type="image/svg+xml" />
-    <link rel="manifest" href="manifest.webmanifest?v=20" />
+    <link rel="manifest" href="manifest.webmanifest?v=21" />
     <link rel="apple-touch-icon" href="icons/icon-192.png?v=16" />
-    <link rel="stylesheet" href="styles.css?v=20" />
+    <link rel="stylesheet" href="styles.css?v=21" />
     <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17992409108"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -45,6 +45,11 @@
           <strong>+10 mil</strong>
           <span>negócios podem organizar cobranças com mais clareza todos os dias.</span>
         </div>
+        <nav class="sales-nav" aria-label="Atalhos da página de vendas">
+          <a href="/como-funciona" data-sales-link="como-funciona">Como funciona</a>
+          <a href="/planos" data-sales-link="planos">Planos</a>
+          <a href="/seguranca" data-sales-link="seguranca">Segurança</a>
+        </nav>
       </div>
 
       <div class="phone-preview" aria-label="Prévia do app Venda Segura no celular">
@@ -99,6 +104,56 @@
           <a href="termos.html" target="_blank" rel="noopener">Termos de uso</a>
           <a href="privacidade.html" target="_blank" rel="noopener">Privacidade</a>
         </div>
+      </div>
+
+      <div class="sales-sections" aria-label="Detalhes do Venda Segura">
+        <section class="sales-section" id="como-funciona">
+          <p class="section-label">Como funciona</p>
+          <h2>Da venda fiada até a cobrança, tudo no celular.</h2>
+          <div class="sales-steps">
+            <div>
+              <span>1</span>
+              <strong>Cadastre o cliente</strong>
+              <p>Salve nome, telefone, produto, valor e quantidade de parcelas.</p>
+            </div>
+            <div>
+              <span>2</span>
+              <strong>Acompanhe vencimentos</strong>
+              <p>Veja o que vence hoje, o que está em dia e o que ficou atrasado.</p>
+            </div>
+            <div>
+              <span>3</span>
+              <strong>Cobre pelo WhatsApp</strong>
+              <p>Use a mensagem pronta para lembrar a cliente sem perder tempo.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="sales-section sales-section-split" id="planos">
+          <div>
+            <p class="section-label">Planos</p>
+            <h2>Teste grátis e depois escolha como continuar.</h2>
+            <p>O plano mensal custa R$ 19,99 e pode ser pago no cartão de crédito recorrente. Também existe a opção Pix por 30 dias para quem prefere pagar manualmente.</p>
+          </div>
+          <div class="sales-price-box">
+            <span>Plano mensal</span>
+            <strong>R$ 19,99/mês</strong>
+            <button class="primary-button" data-sales-action="signup" type="button">Criar conta</button>
+          </div>
+        </section>
+
+        <section class="sales-section sales-section-split" id="seguranca">
+          <div>
+            <p class="section-label">Segurança</p>
+            <h2>Dados salvos online e acesso com senha.</h2>
+            <p>O Venda Segura usa login por e-mail e senha, guarda os dados online e permite acessar pelo celular, tablet ou computador.</p>
+          </div>
+          <div class="sales-login-box">
+            <strong>Já tem conta?</strong>
+            <p>Acesse seus clientes e cobranças salvas.</p>
+            <button class="ghost-button" data-sales-action="login" type="button">Fazer login</button>
+          </div>
+        </section>
       </div>
     </section>
 
@@ -406,8 +461,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js?v=20"></script>
-    <script src="app.js?v=20"></script>
+    <script src="config.js?v=21"></script>
+    <script src="app.js?v=21"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {

@@ -1,11 +1,17 @@
-const CACHE_NAME = "venda-segura-v20";
+const CACHE_NAME = "venda-segura-v21";
 const APP_SHELL = [
   "/",
   "/index.html",
-  "/styles.css?v=20",
-  "/app.js?v=20",
-  "/config.js?v=20",
-  "/manifest.webmanifest?v=20",
+  "/styles.css?v=21",
+  "/app.js?v=21",
+  "/config.js?v=21",
+  "/manifest.webmanifest?v=21",
+  "/como-funciona",
+  "/planos",
+  "/seguranca",
+  "/teste-gratis",
+  "/cadastro",
+  "/login",
   "/termos.html",
   "/privacidade.html",
   "/icons/favicon.svg?v=16",

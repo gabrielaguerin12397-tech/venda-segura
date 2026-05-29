@@ -55,9 +55,32 @@ document.querySelectorAll("[data-open-client-modal]").forEach((button) => {
 
 document.querySelector("#enter-app").addEventListener("click", enterApp);
 document.querySelector("#create-account").addEventListener("click", createAccount);
-document.querySelector("#start-trial").addEventListener("click", () => showAuthPage("signup"));
-document.querySelector("#open-login").addEventListener("click", () => showAuthPage("login"));
-document.querySelector("#back-to-sales").addEventListener("click", showSalesPage);
+document.querySelector("#start-trial").addEventListener("click", () => {
+  window.history.pushState(null, "", "/teste-gratis");
+  showAuthPage("signup");
+});
+document.querySelector("#open-login").addEventListener("click", () => {
+  window.history.pushState(null, "", "/login");
+  showAuthPage("login");
+});
+document.querySelector("#back-to-sales").addEventListener("click", () => {
+  window.history.pushState(null, "", "/");
+  showSalesPage();
+});
+document.querySelectorAll("[data-sales-link]").forEach((link) => {
+  link.addEventListener("click", (event) => {
+    event.preventDefault();
+    window.history.pushState(null, "", link.getAttribute("href"));
+    handlePublicRoute();
+  });
+});
+document.querySelectorAll("[data-sales-action]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const action = button.dataset.salesAction;
+    window.history.pushState(null, "", action === "login" ? "/login" : "/teste-gratis");
+    showAuthPage(action === "login" ? "login" : "signup");
+  });
+});
 document.querySelector("#forgot-password").addEventListener("click", openPasswordModal);
 document.querySelector("#close-password-modal").addEventListener("click", closePasswordModal);
 document.querySelector("#cancel-password-recovery").addEventListener("click", closePasswordModal);
@@ -85,6 +108,9 @@ document.querySelector("#billing-phone").addEventListener("input", formatBilling
 document.querySelector("#enable-notifications").addEventListener("click", enableNotifications);
 
 document.querySelector("#workspace-name").value = localStorage.getItem(sessionKey) || "";
+window.addEventListener("popstate", () => {
+  if (!currentUserId) handlePublicRoute();
+});
 
 initializeApp();
 
@@ -179,11 +205,12 @@ async function showGateIfNeeded() {
   }
 
   localStorage.removeItem(sessionKey);
-  showSalesPage();
+  handlePublicRoute();
 }
 
 async function enterApp() {
   if (document.querySelector("#enter-app").dataset.authMode === "switch-login") {
+    window.history.pushState(null, "", "/login");
     showAuthPage("login");
     return;
   }
@@ -298,6 +325,35 @@ function showSalesPage() {
   document.querySelector("#billing-gate").classList.add("is-hidden");
   document.querySelector("#app-shell").classList.add("is-hidden");
   setAuthStatus("");
+}
+
+function handlePublicRoute() {
+  const route = normalizePublicRoute(window.location.pathname);
+
+  if (route === "login") {
+    showAuthPage("login");
+    return;
+  }
+
+  if (route === "teste-gratis" || route === "cadastro") {
+    showAuthPage("signup");
+    return;
+  }
+
+  showSalesPage();
+
+  if (!route) return;
+
+  const target = document.querySelector(`#${route}`);
+  if (target) {
+    requestAnimationFrame(() => target.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }
+}
+
+function normalizePublicRoute(pathname) {
+  const route = pathname.replace(/^\/+|\/+$/g, "");
+  const knownRoutes = ["como-funciona", "planos", "seguranca", "teste-gratis", "cadastro", "login"];
+  return knownRoutes.includes(route) ? route : "";
 }
 
 function showAuthPage(mode) {
