@@ -60,6 +60,8 @@ let filterTimer = null;
 let currentUserId = null;
 let currentProfile = null;
 let selectedCheckoutType = "essential";
+const trackedScrollDepths = new Set();
+const viewedSalesSections = new Set();
 
 runtimeStatus.textContent = "Interação ativa";
 runtimeStatus.classList.add("ready");
@@ -94,10 +96,12 @@ document.querySelectorAll("[data-open-client-modal]").forEach((button) => {
 document.querySelector("#enter-app").addEventListener("click", enterApp);
 document.querySelector("#create-account").addEventListener("click", createAccount);
 document.querySelector("#start-trial").addEventListener("click", () => {
+  trackEvent("click_start_free", { location: "hero" });
   window.history.pushState(null, "", "/teste-gratis");
   showAuthPage("signup");
 });
 document.querySelector("#open-login").addEventListener("click", () => {
+  trackEvent("click_login", { location: "hero" });
   window.history.pushState(null, "", "/login");
   showAuthPage("login");
 });
@@ -108,6 +112,7 @@ document.querySelector("#back-to-sales").addEventListener("click", () => {
 document.querySelectorAll("[data-sales-link]").forEach((link) => {
   link.addEventListener("click", (event) => {
     event.preventDefault();
+    trackEvent("click_sales_nav", { section: link.dataset.salesLink });
     window.history.pushState(null, "", link.getAttribute("href"));
     handlePublicRoute();
   });
@@ -115,6 +120,7 @@ document.querySelectorAll("[data-sales-link]").forEach((link) => {
 document.querySelectorAll("[data-sales-action]").forEach((button) => {
   button.addEventListener("click", () => {
     const action = button.dataset.salesAction;
+    trackEvent(action === "login" ? "click_login" : "click_start_free", { location: "sales_section" });
     window.history.pushState(null, "", action === "login" ? "/login" : "/teste-gratis");
     showAuthPage(action === "login" ? "login" : "signup");
   });
@@ -155,6 +161,7 @@ window.addEventListener("popstate", () => {
 });
 
 initializeApp();
+initializeBehaviorTracking();
 
 function loadState() {
   const saved = localStorage.getItem(storageKey);
@@ -347,10 +354,66 @@ async function createAccount() {
 }
 
 function trackSignupConversion() {
+  trackEvent("signup_success");
   if (typeof gtag !== "function") return;
 
   gtag("event", "sign_up", {
     send_to: "AW-17992409108/pMAzCNOprzQcEJTAuYND",
+  });
+}
+
+function trackEvent(name, params = {}) {
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({
+    event: name,
+    page_path: window.location.pathname,
+    ...params,
+  });
+
+  if (typeof gtag === "function") {
+    gtag("event", name, params);
+  }
+}
+
+function initializeBehaviorTracking() {
+  trackEvent("landing_page_view");
+
+  [15, 45, 90].forEach((seconds) => {
+    window.setTimeout(() => {
+      if (!document.querySelector("#launch-gate").classList.contains("is-hidden")) {
+        trackEvent("time_on_sales_page", { seconds });
+      }
+    }, seconds * 1000);
+  });
+
+  window.addEventListener("scroll", trackScrollDepth, { passive: true });
+
+  if ("IntersectionObserver" in window) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting || viewedSalesSections.has(entry.target.id)) return;
+          viewedSalesSections.add(entry.target.id);
+          trackEvent("view_sales_section", { section: entry.target.id });
+        });
+      },
+      { threshold: 0.55 },
+    );
+
+    document.querySelectorAll(".sales-section").forEach((section) => observer.observe(section));
+  }
+}
+
+function trackScrollDepth() {
+  const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+  if (scrollable <= 0) return;
+
+  const percent = Math.round((window.scrollY / scrollable) * 100);
+  [25, 50, 75, 90].forEach((depth) => {
+    if (percent >= depth && !trackedScrollDepths.has(depth)) {
+      trackedScrollDepths.add(depth);
+      trackEvent("scroll_depth", { percent: depth });
+    }
   });
 }
 
@@ -853,6 +916,7 @@ async function startSubscription(event) {
 function selectCheckoutPlan(type) {
   selectedCheckoutType = checkoutPlans[type] ? type : "essential";
   const selected = checkoutPlans[selectedCheckoutType];
+  trackEvent("select_plan", { plan: selected.planId });
 
   document.querySelector("#selected-plan-title").textContent = selected.title;
   document.querySelector("#selected-plan-description").textContent = selected.description;
@@ -873,6 +937,7 @@ function getSelectedPaymentMethod() {
 function updateCheckoutSubmitText() {
   const selected = checkoutPlans[selectedCheckoutType] || checkoutPlans.essential;
   const isPix = getSelectedPaymentMethod() === "pix";
+  trackEvent("select_payment_method", { plan: selected.planId, payment_method: isPix ? "pix" : "card" });
   document.querySelector("#checkout-submit").textContent = isPix ? selected.pixSubmitText : selected.cardSubmitText;
 }
 
@@ -880,6 +945,7 @@ async function startCheckout({ endpoint, button, loadingText, fallbackText, plan
   const status = document.querySelector("#billing-status");
   const cpfCnpj = normalizeCpfCnpj(document.querySelector("#billing-cpf-cnpj").value);
   const phoneNumber = normalizeBrazilPhone(document.querySelector("#billing-phone").value);
+  const paymentMethod = getSelectedPaymentMethod();
 
   if (!document.querySelector("#accept-terms-billing").checked) {
     status.textContent = "Aceite os Termos de uso antes de continuar.";
@@ -903,6 +969,7 @@ async function startCheckout({ endpoint, button, loadingText, fallbackText, plan
     button.disabled = true;
     button.textContent = loadingText;
     status.textContent = "";
+    trackEvent("begin_checkout", { plan: planId, payment_method: paymentMethod });
 
     const { data } = await supabaseClient.auth.getSession();
     const accessToken = data.session?.access_token;
