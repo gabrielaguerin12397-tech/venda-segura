@@ -37,41 +37,19 @@ const plans = {
 };
 
 const checkoutPlans = {
-  "essential-card": {
+  essential: {
     planId: "essential",
-    paymentType: "card",
     title: "Essencial",
-    description: "Até 30 clientes. Assinatura mensal recorrente no cartão de crédito.",
-    submitText: "Ir para checkout do cartão",
-    loadingText: "Abrindo assinatura...",
-    endpoint: "/api/create-checkout",
+    description: "Até 30 clientes. Escolha abaixo se prefere cartão de crédito ou Pix.",
+    cardSubmitText: "Ir para checkout do cartão",
+    pixSubmitText: "Ir para pagamento Pix",
   },
-  "professional-card": {
+  professional: {
     planId: "professional",
-    paymentType: "card",
     title: "Profissional",
-    description: "Clientes ilimitados. Assinatura mensal recorrente no cartão de crédito.",
-    submitText: "Ir para checkout do cartão",
-    loadingText: "Abrindo assinatura...",
-    endpoint: "/api/create-checkout",
-  },
-  "essential-pix": {
-    planId: "essential",
-    paymentType: "pix",
-    title: "Essencial via Pix",
-    description: "Até 30 clientes por 30 dias. Pagamento manual via Pix.",
-    submitText: "Ir para pagamento Pix",
-    loadingText: "Gerando Pix...",
-    endpoint: "/api/create-pix-checkout",
-  },
-  "professional-pix": {
-    planId: "professional",
-    paymentType: "pix",
-    title: "Profissional via Pix",
-    description: "Clientes ilimitados por 30 dias. Pagamento manual via Pix.",
-    submitText: "Ir para pagamento Pix",
-    loadingText: "Gerando Pix...",
-    endpoint: "/api/create-pix-checkout",
+    description: "Clientes ilimitados. Escolha abaixo se prefere cartão de crédito ou Pix.",
+    cardSubmitText: "Ir para checkout do cartão",
+    pixSubmitText: "Ir para pagamento Pix",
   },
 };
 
@@ -81,7 +59,7 @@ let editingClientId = null;
 let filterTimer = null;
 let currentUserId = null;
 let currentProfile = null;
-let selectedCheckoutType = "essential-card";
+let selectedCheckoutType = "essential";
 
 runtimeStatus.textContent = "Interação ativa";
 runtimeStatus.classList.add("ready");
@@ -159,8 +137,11 @@ document.querySelector("#sign-out").addEventListener("click", signOut);
 document.querySelector("#billing-back-app").addEventListener("click", showApp);
 document.querySelector("#billing-sign-out").addEventListener("click", signOut);
 document.querySelector("#billing-form").addEventListener("submit", startSubscription);
-document.querySelectorAll("[data-select-checkout]").forEach((button) => {
-  button.addEventListener("click", () => selectCheckoutPlan(button.dataset.selectCheckout));
+document.querySelectorAll("[data-select-plan]").forEach((button) => {
+  button.addEventListener("click", () => selectCheckoutPlan(button.dataset.selectPlan));
+});
+document.querySelectorAll('input[name="payment-method"]').forEach((input) => {
+  input.addEventListener("change", updateCheckoutSubmitText);
 });
 document.querySelector("#change-checkout-plan").addEventListener("click", resetCheckoutPlan);
 document.querySelector("#verify-subscription").addEventListener("click", () => verifySubscription());
@@ -856,24 +837,26 @@ async function signOut() {
 
 async function startSubscription(event) {
   event.preventDefault();
-  const selected = checkoutPlans[selectedCheckoutType] || checkoutPlans["essential-card"];
+  const selected = checkoutPlans[selectedCheckoutType] || checkoutPlans.essential;
+  const paymentMethod = getSelectedPaymentMethod();
+  const isPix = paymentMethod === "pix";
 
   await startCheckout({
-    endpoint: selected.endpoint,
+    endpoint: isPix ? "/api/create-pix-checkout" : "/api/create-checkout",
     button: document.querySelector("#checkout-submit"),
-    loadingText: selected.loadingText,
-    fallbackText: selected.submitText,
+    loadingText: isPix ? "Gerando Pix..." : "Abrindo assinatura...",
+    fallbackText: isPix ? selected.pixSubmitText : selected.cardSubmitText,
     planId: selected.planId,
   });
 }
 
 function selectCheckoutPlan(type) {
-  selectedCheckoutType = checkoutPlans[type] ? type : "essential-card";
+  selectedCheckoutType = checkoutPlans[type] ? type : "essential";
   const selected = checkoutPlans[selectedCheckoutType];
 
   document.querySelector("#selected-plan-title").textContent = selected.title;
   document.querySelector("#selected-plan-description").textContent = selected.description;
-  document.querySelector("#checkout-submit").textContent = selected.submitText;
+  updateCheckoutSubmitText();
   document.querySelector("#billing-form").classList.remove("is-hidden");
   document.querySelector("#billing-form").scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -881,6 +864,16 @@ function selectCheckoutPlan(type) {
 function resetCheckoutPlan() {
   document.querySelector("#billing-form").classList.add("is-hidden");
   document.querySelector("#billing-status").textContent = "";
+}
+
+function getSelectedPaymentMethod() {
+  return document.querySelector('input[name="payment-method"]:checked')?.value === "pix" ? "pix" : "card";
+}
+
+function updateCheckoutSubmitText() {
+  const selected = checkoutPlans[selectedCheckoutType] || checkoutPlans.essential;
+  const isPix = getSelectedPaymentMethod() === "pix";
+  document.querySelector("#checkout-submit").textContent = isPix ? selected.pixSubmitText : selected.cardSubmitText;
 }
 
 async function startCheckout({ endpoint, button, loadingText, fallbackText, planId }) {

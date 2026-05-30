@@ -1,11 +1,11 @@
-const CACHE_NAME = "venda-segura-v23";
+const CACHE_NAME = "venda-segura-v24";
 const APP_SHELL = [
   "/",
   "/index.html",
-  "/styles.css?v=23",
-  "/app.js?v=23",
-  "/config.js?v=23",
-  "/manifest.webmanifest?v=23",
+  "/styles.css?v=24",
+  "/app.js?v=24",
+  "/config.js?v=24",
+  "/manifest.webmanifest?v=24",
   "/como-funciona",
   "/demonstracao",
   "/planos",

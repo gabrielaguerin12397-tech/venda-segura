@@ -769,6 +769,57 @@ button:disabled {
   margin: 0;
 }
 
+.payment-choice {
+  display: grid;
+  gap: 10px;
+}
+
+.payment-choice > span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.payment-options {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.payment-option {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  display: grid;
+  gap: 4px;
+  grid-template-columns: auto 1fr;
+  padding: 14px;
+}
+
+.payment-option input {
+  grid-row: span 2;
+  margin: 2px 4px 0 0;
+  min-height: auto;
+  width: auto;
+}
+
+.payment-option strong,
+.payment-option small {
+  display: block;
+}
+
+.payment-option small {
+  color: var(--muted);
+}
+
+.payment-option:has(input:checked) {
+  background: #f7fbff;
+  border-color: #5fa3bd;
+  box-shadow: 0 0 0 3px rgba(15, 91, 120, 0.1);
+}
+
 .checkout-form {
   display: grid;
   gap: 14px;
@@ -1695,6 +1746,7 @@ textarea {
   .advanced-toolbar,
   .client-sections,
   .checkout-options,
+  .payment-options,
   .sales-steps,
   .sales-plan-grid,
   .demo-section,

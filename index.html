@@ -11,9 +11,9 @@
     <link rel="icon" href="icons/favicon.svg?v=16" type="image/svg+xml" />
     <link rel="icon" href="icons/favicon.png?v=16" type="image/png" />
     <link rel="shortcut icon" href="icons/favicon.svg?v=16" type="image/svg+xml" />
-    <link rel="manifest" href="manifest.webmanifest?v=23" />
+    <link rel="manifest" href="manifest.webmanifest?v=24" />
     <link rel="apple-touch-icon" href="icons/icon-192.png?v=16" />
-    <link rel="stylesheet" href="styles.css?v=23" />
+    <link rel="stylesheet" href="styles.css?v=24" />
     <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17992409108"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -289,26 +289,14 @@
           <section class="checkout-option featured">
             <span>Essencial</span>
             <strong>R$ 19,99/mês</strong>
-            <p>Até 30 clientes. Cobrança recorrente no cartão de crédito.</p>
-            <button class="primary-button" data-select-checkout="essential-card" type="button">Assinar Essencial</button>
+            <p>Até 30 clientes. Para quem está começando a organizar as vendas.</p>
+            <button class="primary-button" data-select-plan="essential" type="button">Escolher Essencial</button>
           </section>
           <section class="checkout-option">
             <span>Profissional</span>
             <strong>R$ 29,99/mês</strong>
-            <p>Clientes ilimitados. Cobrança recorrente no cartão de crédito.</p>
-            <button class="ghost-button" data-select-checkout="professional-card" type="button">Assinar Profissional</button>
-          </section>
-          <section class="checkout-option">
-            <span>Essencial Pix</span>
-            <strong>R$ 19,99</strong>
-            <p>Até 30 clientes por 30 dias. Pagamento manual por Pix.</p>
-            <button class="ghost-button" data-select-checkout="essential-pix" type="button">Pagar Essencial via Pix</button>
-          </section>
-          <section class="checkout-option">
-            <span>Profissional Pix</span>
-            <strong>R$ 29,99</strong>
-            <p>Clientes ilimitados por 30 dias. Pagamento manual por Pix.</p>
-            <button class="ghost-button" data-select-checkout="professional-pix" type="button">Pagar Profissional via Pix</button>
+            <p>Clientes ilimitados. Para quem vende com frequência.</p>
+            <button class="ghost-button" data-select-plan="professional" type="button">Escolher Profissional</button>
           </section>
         </div>
 
@@ -358,6 +346,22 @@
               Estado
               <input id="billing-state" autocomplete="address-level1" maxlength="2" required placeholder="UF" />
             </label>
+          </div>
+
+          <div class="payment-choice">
+            <span>Forma de pagamento</span>
+            <div class="payment-options" role="radiogroup" aria-label="Forma de pagamento">
+              <label class="payment-option">
+                <input name="payment-method" value="card" type="radio" checked />
+                <strong>Cartão de crédito</strong>
+                <small>Assinatura mensal recorrente.</small>
+              </label>
+              <label class="payment-option">
+                <input name="payment-method" value="pix" type="radio" />
+                <strong>Pix</strong>
+                <small>Pagamento manual, libera 30 dias.</small>
+              </label>
+            </div>
           </div>
 
           <label class="checkbox-label">
@@ -514,8 +518,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js?v=23"></script>
-    <script src="app.js?v=23"></script>
+    <script src="config.js?v=24"></script>
+    <script src="app.js?v=24"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
