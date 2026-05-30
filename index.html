@@ -11,9 +11,9 @@
     <link rel="icon" href="icons/favicon.svg?v=16" type="image/svg+xml" />
     <link rel="icon" href="icons/favicon.png?v=16" type="image/png" />
     <link rel="shortcut icon" href="icons/favicon.svg?v=16" type="image/svg+xml" />
-    <link rel="manifest" href="manifest.webmanifest?v=21" />
+    <link rel="manifest" href="manifest.webmanifest?v=23" />
     <link rel="apple-touch-icon" href="icons/icon-192.png?v=16" />
-    <link rel="stylesheet" href="styles.css?v=21" />
+    <link rel="stylesheet" href="styles.css?v=23" />
     <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17992409108"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -47,6 +47,7 @@
         </div>
         <nav class="sales-nav" aria-label="Atalhos da página de vendas">
           <a href="/como-funciona" data-sales-link="como-funciona">Como funciona</a>
+          <a href="/demonstracao" data-sales-link="demonstracao">Demonstração</a>
           <a href="/planos" data-sales-link="planos">Planos</a>
           <a href="/seguranca" data-sales-link="seguranca">Segurança</a>
         </nav>
@@ -88,16 +89,15 @@
 
       <div class="launch-panel">
         <p class="plan-label">Comece agora</p>
-        <strong class="plan-price">R$ 19,99/mês</strong>
+        <strong class="plan-price">Grátis até 5 clientes</strong>
         <p class="plan-note">Feito para quem vende fiado, parcelado ou no crediário e precisa saber exatamente quem deve, quanto deve e quando vence.</p>
         <ul class="plan-list">
-          <li>Cadastre clientes, compras e parcelas</li>
+          <li>Comece grátis e teste com clientes reais</li>
           <li>Veja vencimentos e atrasos em um só lugar</li>
           <li>Envie cobrança pronta pelo WhatsApp</li>
-          <li>Acesse pelo celular com dados salvos online</li>
-          <li>Assine no cartão ou pague 30 dias via Pix</li>
+          <li>Planos pagos a partir de R$ 19,99/mês</li>
         </ul>
-        <button class="primary-button" id="start-trial" type="button">Criar conta e testar grátis</button>
+        <button class="primary-button" id="start-trial" type="button">Começar grátis</button>
         <button class="ghost-button" id="open-login" type="button">Já tem conta? Fazer login</button>
         <p class="sales-note">Não precisa cartão para testar. Depois escolha assinatura mensal ou Pix por 30 dias.</p>
         <div class="legal-links">
@@ -129,16 +129,49 @@
           </div>
         </section>
 
-        <section class="sales-section sales-section-split" id="planos">
-          <div>
-            <p class="section-label">Planos</p>
-            <h2>Teste grátis e depois escolha como continuar.</h2>
-            <p>O plano mensal custa R$ 19,99 e pode ser pago no cartão de crédito recorrente. Também existe a opção Pix por 30 dias para quem prefere pagar manualmente.</p>
+        <section class="sales-section demo-section" id="demonstracao">
+          <div class="demo-copy">
+            <p class="section-label">Demonstração</p>
+            <h2>Simples para quem vende, claro para quem cobra.</h2>
+            <p>O Venda Segura foi pensado para abrir no celular, cadastrar uma venda em poucos passos e deixar a cobrança pronta para enviar quando a parcela vencer.</p>
+            <div class="demo-list">
+              <div><span>01</span><strong>Cliente</strong><p>Nome, telefone e produto ficam salvos.</p></div>
+              <div><span>02</span><strong>Parcelas</strong><p>O app organiza valores e vencimentos.</p></div>
+              <div><span>03</span><strong>Cobrança</strong><p>Você envia a mensagem pelo WhatsApp.</p></div>
+            </div>
           </div>
-          <div class="sales-price-box">
-            <span>Plano mensal</span>
-            <strong>R$ 19,99/mês</strong>
-            <button class="primary-button" data-sales-action="signup" type="button">Criar conta</button>
+          <div class="demo-media">
+            <img src="ads-images/anuncio-revendedora-celular.png" alt="Empreendedora usando o celular para organizar cobranças" />
+            <div class="demo-play-card" aria-hidden="true">
+              <span>▶</span>
+              <strong>Fluxo em 3 passos</strong>
+              <small>Cadastro, parcela e cobrança</small>
+            </div>
+          </div>
+        </section>
+
+        <section class="sales-section" id="planos">
+          <p class="section-label">Planos</p>
+          <h2>Comece grátis e cresça quando precisar.</h2>
+          <div class="sales-plan-grid">
+            <div class="sales-plan-card">
+              <span>Grátis</span>
+              <strong>R$ 0</strong>
+              <p>Até 5 clientes para testar o app com vendas reais.</p>
+              <button class="ghost-button" data-sales-action="signup" type="button">Começar grátis</button>
+            </div>
+            <div class="sales-plan-card featured">
+              <span>Essencial</span>
+              <strong>R$ 19,99/mês</strong>
+              <p>Até 30 clientes. Ideal para quem vende pouco ou está começando.</p>
+              <button class="primary-button" data-sales-action="signup" type="button">Criar conta</button>
+            </div>
+            <div class="sales-plan-card">
+              <span>Profissional</span>
+              <strong>R$ 29,99/mês</strong>
+              <p>Clientes ilimitados para quem vende com frequência.</p>
+              <button class="ghost-button" data-sales-action="signup" type="button">Criar conta</button>
+            </div>
           </div>
         </section>
 
@@ -147,6 +180,12 @@
             <p class="section-label">Segurança</p>
             <h2>Dados salvos online e acesso com senha.</h2>
             <p>O Venda Segura usa login por e-mail e senha, guarda os dados online e permite acessar pelo celular, tablet ou computador.</p>
+            <div class="trust-grid">
+              <span>Login com senha</span>
+              <span>Dados online</span>
+              <span>Termos de uso</span>
+              <span>Pagamento seguro</span>
+            </div>
           </div>
           <div class="sales-login-box">
             <strong>Já tem conta?</strong>
@@ -180,7 +219,7 @@
           <span>Li e aceito os <a href="termos.html" target="_blank" rel="noopener">Termos de uso</a> e a <a href="privacidade.html" target="_blank" rel="noopener">Política de privacidade</a>.</span>
         </label>
         <div class="auth-actions">
-          <button class="primary-button" id="create-account" type="button">Criar conta e testar gratis</button>
+          <button class="primary-button" id="create-account" type="button">Começar grátis</button>
           <button class="ghost-button" id="enter-app" type="button">Entrar</button>
         </div>
         <button class="link-button is-hidden" id="forgot-password" type="button">Esqueci minha senha</button>
@@ -248,16 +287,28 @@
 
         <div class="checkout-options">
           <section class="checkout-option featured">
-            <span>Plano mensal</span>
+            <span>Essencial</span>
             <strong>R$ 19,99/mês</strong>
-            <p>Cobrança recorrente no cartão de crédito. Ideal para não se preocupar com renovação.</p>
-            <button class="primary-button" data-select-checkout="card" type="button">Escolher cartão de crédito</button>
+            <p>Até 30 clientes. Cobrança recorrente no cartão de crédito.</p>
+            <button class="primary-button" data-select-checkout="essential-card" type="button">Assinar Essencial</button>
           </section>
           <section class="checkout-option">
-            <span>Pix 30 dias</span>
+            <span>Profissional</span>
+            <strong>R$ 29,99/mês</strong>
+            <p>Clientes ilimitados. Cobrança recorrente no cartão de crédito.</p>
+            <button class="ghost-button" data-select-checkout="professional-card" type="button">Assinar Profissional</button>
+          </section>
+          <section class="checkout-option">
+            <span>Essencial Pix</span>
             <strong>R$ 19,99</strong>
-            <p>Pagamento manual por Pix. O acesso é liberado por 30 dias após a confirmação.</p>
-            <button class="ghost-button" data-select-checkout="pix" type="button">Escolher Pix 30 dias</button>
+            <p>Até 30 clientes por 30 dias. Pagamento manual por Pix.</p>
+            <button class="ghost-button" data-select-checkout="essential-pix" type="button">Pagar Essencial via Pix</button>
+          </section>
+          <section class="checkout-option">
+            <span>Profissional Pix</span>
+            <strong>R$ 29,99</strong>
+            <p>Clientes ilimitados por 30 dias. Pagamento manual por Pix.</p>
+            <button class="ghost-button" data-select-checkout="professional-pix" type="button">Pagar Profissional via Pix</button>
           </section>
         </div>
 
@@ -316,6 +367,7 @@
 
           <button class="primary-button" id="checkout-submit" type="submit">Continuar</button>
           <button class="ghost-button verify-button" id="verify-subscription" type="button">Já paguei, verificar assinatura</button>
+          <button class="ghost-button" id="billing-back-app" type="button">Voltar ao app</button>
           <button class="ghost-button" id="billing-sign-out" type="button">Sair</button>
           <p class="auth-status" id="billing-status"></p>
         </form>
@@ -345,6 +397,7 @@
             <p class="eyebrow">Venda Segura</p>
             <h1 id="page-title">Clientes</h1>
             <p class="runtime-status" id="runtime-status">Carregando interação...</p>
+            <p class="plan-status" id="plan-status"></p>
           </div>
           <div class="top-actions" id="client-actions">
             <button class="ghost-button" id="sign-out" type="button">Sair</button>
@@ -461,8 +514,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js?v=21"></script>
-    <script src="app.js?v=21"></script>
+    <script src="config.js?v=23"></script>
+    <script src="app.js?v=23"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {

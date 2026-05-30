@@ -15,13 +15,73 @@ const defaultTemplates = {
     "Oi, {nome}. Tudo bem? Vi aqui que sua parcela de {valor}, referente a {produto}, venceu em {vencimento}. Pode me confirmar quando consegue regularizar?",
 };
 
+const plans = {
+  free: {
+    id: "free",
+    name: "Grátis",
+    limit: 5,
+    description: "Até 5 clientes",
+  },
+  essential: {
+    id: "essential",
+    name: "Essencial",
+    limit: 30,
+    description: "Até 30 clientes",
+  },
+  professional: {
+    id: "professional",
+    name: "Profissional",
+    limit: Infinity,
+    description: "Clientes ilimitados",
+  },
+};
+
+const checkoutPlans = {
+  "essential-card": {
+    planId: "essential",
+    paymentType: "card",
+    title: "Essencial",
+    description: "Até 30 clientes. Assinatura mensal recorrente no cartão de crédito.",
+    submitText: "Ir para checkout do cartão",
+    loadingText: "Abrindo assinatura...",
+    endpoint: "/api/create-checkout",
+  },
+  "professional-card": {
+    planId: "professional",
+    paymentType: "card",
+    title: "Profissional",
+    description: "Clientes ilimitados. Assinatura mensal recorrente no cartão de crédito.",
+    submitText: "Ir para checkout do cartão",
+    loadingText: "Abrindo assinatura...",
+    endpoint: "/api/create-checkout",
+  },
+  "essential-pix": {
+    planId: "essential",
+    paymentType: "pix",
+    title: "Essencial via Pix",
+    description: "Até 30 clientes por 30 dias. Pagamento manual via Pix.",
+    submitText: "Ir para pagamento Pix",
+    loadingText: "Gerando Pix...",
+    endpoint: "/api/create-pix-checkout",
+  },
+  "professional-pix": {
+    planId: "professional",
+    paymentType: "pix",
+    title: "Profissional via Pix",
+    description: "Clientes ilimitados por 30 dias. Pagamento manual via Pix.",
+    submitText: "Ir para pagamento Pix",
+    loadingText: "Gerando Pix...",
+    endpoint: "/api/create-pix-checkout",
+  },
+};
+
 const state = loadState();
 const runtimeStatus = document.querySelector("#runtime-status");
 let editingClientId = null;
 let filterTimer = null;
 let currentUserId = null;
 let currentProfile = null;
-let selectedCheckoutType = "card";
+let selectedCheckoutType = "essential-card";
 
 runtimeStatus.textContent = "Interação ativa";
 runtimeStatus.classList.add("ready");
@@ -96,6 +156,7 @@ document.querySelector("#open-client-search").addEventListener("click", showClie
 document.querySelector("#client-filter").addEventListener("change", renderClients);
 document.querySelector("#clear-filters").addEventListener("click", clearFilters);
 document.querySelector("#sign-out").addEventListener("click", signOut);
+document.querySelector("#billing-back-app").addEventListener("click", showApp);
 document.querySelector("#billing-sign-out").addEventListener("click", signOut);
 document.querySelector("#billing-form").addEventListener("submit", startSubscription);
 document.querySelectorAll("[data-select-checkout]").forEach((button) => {
@@ -317,6 +378,7 @@ function showApp() {
   document.querySelector("#auth-gate").classList.add("is-hidden");
   document.querySelector("#billing-gate").classList.add("is-hidden");
   document.querySelector("#app-shell").classList.remove("is-hidden");
+  renderPlanStatus();
 }
 
 function showSalesPage() {
@@ -352,7 +414,7 @@ function handlePublicRoute() {
 
 function normalizePublicRoute(pathname) {
   const route = pathname.replace(/^\/+|\/+$/g, "");
-  const knownRoutes = ["como-funciona", "planos", "seguranca", "teste-gratis", "cadastro", "login"];
+  const knownRoutes = ["como-funciona", "demonstracao", "planos", "seguranca", "teste-gratis", "cadastro", "login"];
   return knownRoutes.includes(route) ? route : "";
 }
 
@@ -567,16 +629,64 @@ function getBillingMessage() {
     return "Identificamos uma pendencia na assinatura. Regularize para continuar usando.";
   }
 
-  return "Seu periodo de teste terminou. Assine o Plano Essencial para continuar usando.";
+  return "Escolha um plano para cadastrar mais clientes.";
 }
 
 function hasSubscriptionAccess() {
   if (!currentProfile) return true;
+  if (currentProfile.subscription_status === "free") return true;
+  if (currentProfile.subscription_status === "pending") return true;
   if (currentProfile.subscription_status === "active") return true;
   if (currentProfile.subscription_status === "trial") {
-    return !currentProfile.trial_ends_at || new Date(currentProfile.trial_ends_at) > new Date();
+    return true;
   }
-  return false;
+  return currentProfile.subscription_status !== "blocked";
+}
+
+function getCurrentPlan() {
+  const provider = String(currentProfile?.subscription_provider || "").toLowerCase();
+  const status = currentProfile?.subscription_status;
+
+  if (status === "pending" || status === "free") {
+    return plans.free;
+  }
+
+  if (status === "trial") {
+    if (provider.includes("professional")) return plans.professional;
+    if (provider.includes("essential")) return plans.essential;
+    return plans.free;
+  }
+
+  if (status === "active") {
+    if (provider.includes("essential")) return plans.essential;
+    return plans.professional;
+  }
+
+  return plans.free;
+}
+
+function getClientLimit() {
+  return getCurrentPlan().limit;
+}
+
+function hasReachedClientLimit() {
+  const limit = getClientLimit();
+  return Number.isFinite(limit) && state.clients.length >= limit;
+}
+
+function getClientLimitMessage() {
+  const plan = getCurrentPlan();
+  if (!Number.isFinite(plan.limit)) return "";
+  return `Seu plano ${plan.name} permite até ${plan.limit} clientes. Escolha um plano maior para cadastrar mais.`;
+}
+
+function renderPlanStatus() {
+  const target = document.querySelector("#plan-status");
+  if (!target) return;
+
+  const plan = getCurrentPlan();
+  const usage = Number.isFinite(plan.limit) ? `${state.clients.length}/${plan.limit} clientes` : `${state.clients.length} clientes`;
+  target.textContent = `Plano ${plan.name}: ${usage}`;
 }
 
 async function ensureUserProfile(user, storeName) {
@@ -597,7 +707,7 @@ async function ensureUserProfile(user, storeName) {
   await supabaseClient.from("profiles").insert({
     id: user.id,
     store_name: storeName || user.email || "Minha loja",
-    subscription_status: "trial",
+    subscription_status: "free",
   });
 }
 
@@ -746,25 +856,24 @@ async function signOut() {
 
 async function startSubscription(event) {
   event.preventDefault();
-  const isPix = selectedCheckoutType === "pix";
+  const selected = checkoutPlans[selectedCheckoutType] || checkoutPlans["essential-card"];
 
   await startCheckout({
-    endpoint: isPix ? "/api/create-pix-checkout" : "/api/create-checkout",
+    endpoint: selected.endpoint,
     button: document.querySelector("#checkout-submit"),
-    loadingText: isPix ? "Gerando Pix..." : "Abrindo assinatura...",
-    fallbackText: isPix ? "Ir para pagamento Pix" : "Ir para checkout do cartao",
+    loadingText: selected.loadingText,
+    fallbackText: selected.submitText,
+    planId: selected.planId,
   });
 }
 
 function selectCheckoutPlan(type) {
-  selectedCheckoutType = type === "pix" ? "pix" : "card";
-  const isPix = selectedCheckoutType === "pix";
+  selectedCheckoutType = checkoutPlans[type] ? type : "essential-card";
+  const selected = checkoutPlans[selectedCheckoutType];
 
-  document.querySelector("#selected-plan-title").textContent = isPix ? "Pix 30 dias" : "Plano mensal";
-  document.querySelector("#selected-plan-description").textContent = isPix
-    ? "Pagamento manual por Pix. O acesso é liberado por 30 dias após a confirmação."
-    : "Assinatura mensal recorrente no cartão de crédito.";
-  document.querySelector("#checkout-submit").textContent = isPix ? "Ir para pagamento Pix" : "Ir para checkout do cartão";
+  document.querySelector("#selected-plan-title").textContent = selected.title;
+  document.querySelector("#selected-plan-description").textContent = selected.description;
+  document.querySelector("#checkout-submit").textContent = selected.submitText;
   document.querySelector("#billing-form").classList.remove("is-hidden");
   document.querySelector("#billing-form").scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -774,7 +883,7 @@ function resetCheckoutPlan() {
   document.querySelector("#billing-status").textContent = "";
 }
 
-async function startCheckout({ endpoint, button, loadingText, fallbackText }) {
+async function startCheckout({ endpoint, button, loadingText, fallbackText, planId }) {
   const status = document.querySelector("#billing-status");
   const cpfCnpj = normalizeCpfCnpj(document.querySelector("#billing-cpf-cnpj").value);
   const phoneNumber = normalizeBrazilPhone(document.querySelector("#billing-phone").value);
@@ -826,6 +935,7 @@ async function startCheckout({ endpoint, button, loadingText, fallbackText }) {
         province: document.querySelector("#billing-province").value.trim(),
         city: document.querySelector("#billing-city").value.trim(),
         state: document.querySelector("#billing-state").value.trim().toUpperCase(),
+        planId,
       }),
     });
 
@@ -1032,6 +1142,7 @@ function hideClientTools() {
 }
 
 function render() {
+  renderPlanStatus();
   renderClients();
   renderCharges();
 }
@@ -1057,6 +1168,12 @@ function resetClientForm() {
 }
 
 function startNewClient() {
+  if (!editingClientId && hasReachedClientLimit()) {
+    showToast(getClientLimitMessage(), "warning");
+    showBillingGate();
+    return;
+  }
+
   resetClientForm();
   setView("clients");
   showClientForm();
@@ -1118,6 +1235,15 @@ async function handleClientSubmit(event) {
   const firstDueDate = formData.get("firstDueDate");
   const clientId = String(formData.get("clientId") || "");
   const existing = state.clients.find((item) => item.id === clientId);
+
+  if (!existing && hasReachedClientLimit()) {
+    setClientFeedback(getClientLimitMessage());
+    showToast(getClientLimitMessage(), "warning");
+    submitButton.disabled = false;
+    submitButton.textContent = "Salvar cliente";
+    showBillingGate();
+    return;
+  }
 
   try {
     if (existing) {

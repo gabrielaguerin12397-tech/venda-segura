@@ -11,6 +11,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/demonstracao",
+      "destination": "/index.html"
+    },
+    {
       "source": "/planos",
       "destination": "/index.html"
     },
