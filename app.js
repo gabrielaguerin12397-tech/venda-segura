@@ -357,7 +357,7 @@ function trackSignupConversion() {
   trackEvent("signup_success");
   if (typeof gtag !== "function") return;
 
-  gtag("event", "sign_up", {
+  gtag("event", "conversion", {
     send_to: "AW-17992409108/pMAzCNOprzQcEJTAuYND",
   });
 }
