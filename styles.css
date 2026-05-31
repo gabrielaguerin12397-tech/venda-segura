@@ -1484,6 +1484,44 @@ th {
   margin-bottom: 16px;
 }
 
+.purchase-mode {
+  background: #f7fbff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 14px;
+}
+
+.purchase-mode > span {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.purchase-mode-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.purchase-mode-options label {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.purchase-mode-options input {
+  min-height: auto;
+  width: auto;
+}
+
 .client-feedback,
 .client-notice {
   border-radius: 8px;

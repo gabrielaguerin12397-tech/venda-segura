@@ -11,9 +11,9 @@
     <link rel="icon" href="icons/favicon.svg?v=16" type="image/svg+xml" />
     <link rel="icon" href="icons/favicon.png?v=16" type="image/png" />
     <link rel="shortcut icon" href="icons/favicon.svg?v=16" type="image/svg+xml" />
-    <link rel="manifest" href="manifest.webmanifest?v=28" />
+    <link rel="manifest" href="manifest.webmanifest?v=29" />
     <link rel="apple-touch-icon" href="icons/icon-192.png?v=16" />
-    <link rel="stylesheet" href="styles.css?v=28" />
+    <link rel="stylesheet" href="styles.css?v=29" />
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-GQZHX6HGC2"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -426,6 +426,25 @@
 
             <form id="client-form">
               <input name="clientId" type="hidden" />
+              <div class="purchase-mode" id="purchase-mode-panel">
+                <span>Tipo de cadastro</span>
+                <div class="purchase-mode-options">
+                  <label>
+                    <input name="purchaseMode" value="new" type="radio" checked />
+                    Novo cliente
+                  </label>
+                  <label>
+                    <input name="purchaseMode" value="existing" type="radio" />
+                    Compra para cliente existente
+                  </label>
+                </div>
+                <label class="existing-client-field is-hidden" id="existing-client-field">
+                  Cliente cadastrado
+                  <select id="existing-client-select" name="existingClientId">
+                    <option value="">Selecione um cliente</option>
+                  </select>
+                </label>
+              </div>
               <div class="form-grid">
                 <label>
                   Nome
@@ -523,8 +542,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js?v=28"></script>
-    <script src="app.js?v=28"></script>
+    <script src="config.js?v=29"></script>
+    <script src="app.js?v=29"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {

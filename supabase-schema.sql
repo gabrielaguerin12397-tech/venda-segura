@@ -23,6 +23,7 @@ create table public.installments (
   client_id uuid not null references public.clients(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
   number integer not null,
+  product text not null default 'compra parcelada',
   amount numeric(12,2) not null,
   due_date date not null,
   paid boolean not null default false,

@@ -1,4 +1,4 @@
-const storageKey = "venda-segura";
+﻿const storageKey = "venda-segura";
 const sessionKey = "venda-segura-session";
 const notificationEnabledKey = "venda-segura-notifications-enabled";
 const notificationDateKey = "venda-segura-last-notification-date";
@@ -18,15 +18,15 @@ const defaultTemplates = {
 const plans = {
   free: {
     id: "free",
-    name: "Grátis",
+    name: "GrÃ¡tis",
     limit: 5,
-    description: "Até 5 clientes",
+    description: "AtÃ© 5 clientes",
   },
   essential: {
     id: "essential",
     name: "Essencial",
     limit: 30,
-    description: "Até 30 clientes",
+    description: "AtÃ© 30 clientes",
   },
   professional: {
     id: "professional",
@@ -40,15 +40,15 @@ const checkoutPlans = {
   essential: {
     planId: "essential",
     title: "Essencial",
-    description: "Até 30 clientes. Escolha abaixo se prefere cartão de crédito ou Pix.",
-    cardSubmitText: "Ir para checkout do cartão",
+    description: "AtÃ© 30 clientes. Escolha abaixo se prefere cartÃ£o de crÃ©dito ou Pix.",
+    cardSubmitText: "Ir para checkout do cartÃ£o",
     pixSubmitText: "Ir para pagamento Pix",
   },
   professional: {
     planId: "professional",
     title: "Profissional",
-    description: "Clientes ilimitados. Escolha abaixo se prefere cartão de crédito ou Pix.",
-    cardSubmitText: "Ir para checkout do cartão",
+    description: "Clientes ilimitados. Escolha abaixo se prefere cartÃ£o de crÃ©dito ou Pix.",
+    cardSubmitText: "Ir para checkout do cartÃ£o",
     pixSubmitText: "Ir para pagamento Pix",
   },
 };
@@ -64,7 +64,7 @@ const trackedScrollDepths = new Set();
 const viewedSalesSections = new Set();
 let lastAppOpenTrackedAt = 0;
 
-runtimeStatus.textContent = "Interação ativa";
+runtimeStatus.textContent = "InteraÃ§Ã£o ativa";
 runtimeStatus.classList.add("ready");
 
 const formatter = new Intl.NumberFormat("pt-BR", {
@@ -83,7 +83,7 @@ const views = {
 
 const pageTitles = {
   clients: "Clientes",
-  charges: "Cobranças",
+  charges: "CobranÃ§as",
 };
 
 document.querySelectorAll(".nav-item").forEach((button) => {
@@ -134,6 +134,10 @@ document.querySelector("#save-new-password").addEventListener("click", saveNewPa
 document.querySelector("#sidebar-toggle").addEventListener("click", toggleSidebar);
 document.querySelector("#client-form").addEventListener("submit", handleClientSubmit);
 document.querySelector("#clear-client-form").addEventListener("click", resetClientForm);
+document.querySelectorAll('input[name="purchaseMode"]').forEach((input) => {
+  input.addEventListener("change", applyClientFormMode);
+});
+document.querySelector("#existing-client-select").addEventListener("change", fillExistingClientFields);
 document.querySelector("#open-client-search").addEventListener("click", showClientSearch);
 ["#client-search", "#product-filter", "#created-start-filter", "#created-end-filter", "#due-start-filter", "#due-end-filter"].forEach(
   (selector) => document.querySelector(selector).addEventListener("input", scheduleClientRender),
@@ -756,7 +760,7 @@ function hasReachedClientLimit() {
 function getClientLimitMessage() {
   const plan = getCurrentPlan();
   if (!Number.isFinite(plan.limit)) return "";
-  return `Seu plano ${plan.name} permite até ${plan.limit} clientes. Escolha um plano maior para cadastrar mais.`;
+  return `Seu plano ${plan.name} permite atÃ© ${plan.limit} clientes. Escolha um plano maior para cadastrar mais.`;
 }
 
 function renderPlanStatus() {
@@ -819,6 +823,7 @@ async function loadRemoteState() {
         number: installment.number,
         amount: Number(installment.amount),
         dueDate: installment.due_date,
+        product: installment.product || client.product,
         paid: installment.paid,
         paidAt: installment.paid_at,
       })),
@@ -864,6 +869,7 @@ async function syncRemoteState() {
       number: installment.number,
       amount: installment.amount,
       due_date: installment.dueDate,
+      product: installment.product || client.product,
       paid: installment.paid,
       paid_at: installment.paidAt,
     })),
@@ -882,7 +888,7 @@ async function syncRemoteState() {
 
   await supabaseClient.from("clients").delete().eq("user_id", currentUserId);
   if (clientRows.length) await supabaseClient.from("clients").insert(clientRows);
-  if (installmentRows.length) await supabaseClient.from("installments").insert(installmentRows);
+  if (installmentRows.length) await insertInstallmentRows(installmentRows);
   if (historyRows.length) await supabaseClient.from("client_history").insert(historyRows);
   await supabaseClient.from("message_templates").upsert({
     user_id: currentUserId,
@@ -890,6 +896,19 @@ async function syncRemoteState() {
     late: state.templates.late,
     updated_at: new Date().toISOString(),
   });
+}
+
+async function insertInstallmentRows(rows) {
+  const { error } = await supabaseClient.from("installments").insert(rows);
+  if (!error) return;
+
+  const message = String(error.message || "").toLowerCase();
+  if (!message.includes("product")) {
+    throw error;
+  }
+
+  const legacyRows = rows.map(({ product, ...row }) => row);
+  await supabaseClient.from("installments").insert(legacyRows);
 }
 
 function setAuthStatus(message) {
@@ -1274,6 +1293,12 @@ function resetClientForm() {
   form.reset();
   form.elements.clientId.value = "";
   form.elements.firstDueDate.value = toInputDate(new Date());
+  form.elements.purchaseMode.value = "new";
+  form.elements.name.readOnly = false;
+  form.elements.phone.readOnly = false;
+  document.querySelector("#purchase-mode-panel").classList.remove("is-hidden");
+  populateExistingClientSelect();
+  applyClientFormMode();
   document.querySelector("#client-form-title").textContent = "Cadastrar cliente";
   document.querySelector("#client-form-submit").textContent = "Salvar cliente";
   setClientFeedback("");
@@ -1296,14 +1321,76 @@ function startNewClient() {
 }
 
 function focusClientForm() {
+  const form = document.querySelector("#client-form");
   document.querySelector("#client-form-panel").scrollIntoView({ behavior: "smooth", block: "start" });
-  document.querySelector("#client-form").elements.name.focus();
+  const isExistingPurchase = form.elements.purchaseMode.value === "existing" && !editingClientId;
+  (isExistingPurchase ? form.elements.product : form.elements.name).focus();
 }
 
 function showClientForm() {
   document.querySelector("#client-filter-panel").classList.add("is-hidden");
   document.querySelector("#client-form-panel").classList.remove("is-hidden");
+  populateExistingClientSelect();
   focusClientForm();
+}
+
+function populateExistingClientSelect(selectedClientId = "") {
+  const select = document.querySelector("#existing-client-select");
+  if (!select) return;
+
+  const currentValue = selectedClientId || select.value;
+  select.innerHTML = `<option value="">Selecione um cliente</option>`;
+  state.clients
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"))
+    .forEach((client) => {
+      const option = document.createElement("option");
+      option.value = client.id;
+      option.textContent = `${client.name} - ${formatPhone(client.phone)}`;
+      select.appendChild(option);
+    });
+
+  if (currentValue && state.clients.some((client) => client.id === currentValue)) {
+    select.value = currentValue;
+  }
+}
+
+function applyClientFormMode() {
+  const form = document.querySelector("#client-form");
+  const isExistingPurchase = form.elements.purchaseMode.value === "existing" && !editingClientId;
+  document.querySelector("#existing-client-field").classList.toggle("is-hidden", !isExistingPurchase);
+  form.elements.name.readOnly = isExistingPurchase;
+  form.elements.phone.readOnly = isExistingPurchase;
+
+  if (isExistingPurchase) {
+    document.querySelector("#client-form-title").textContent = "Cadastrar nova compra";
+    document.querySelector("#client-form-submit").textContent = "Salvar compra";
+    fillExistingClientFields();
+    return;
+  }
+
+  if (!editingClientId) {
+    document.querySelector("#client-form-title").textContent = "Cadastrar cliente";
+    document.querySelector("#client-form-submit").textContent = "Salvar cliente";
+  }
+}
+
+function fillExistingClientFields() {
+  const form = document.querySelector("#client-form");
+  if (form.elements.purchaseMode.value !== "existing" || editingClientId) return;
+
+  const client = state.clients.find((item) => item.id === form.elements.existingClientId.value);
+  if (!client) {
+    form.elements.name.value = "";
+    form.elements.phone.value = "";
+    form.elements.notes.value = "";
+    return;
+  }
+
+  form.elements.name.value = client.name;
+  form.elements.phone.value = client.phone;
+  form.elements.notes.value = client.notes || "";
+  form.elements.product.value = "";
 }
 
 function setClientFeedback(message) {
@@ -1349,10 +1436,20 @@ async function handleClientSubmit(event) {
   const total = Number(formData.get("total"));
   const installments = Number(formData.get("installments"));
   const firstDueDate = formData.get("firstDueDate");
+  const product = String(formData.get("product")).trim() || "compra parcelada";
   const clientId = String(formData.get("clientId") || "");
+  const isExistingPurchase = formData.get("purchaseMode") === "existing" && !editingClientId;
+  const existingPurchaseClient = isExistingPurchase ? state.clients.find((item) => item.id === String(formData.get("existingClientId") || "")) : null;
   const existing = state.clients.find((item) => item.id === clientId);
 
-  if (!existing && hasReachedClientLimit()) {
+  if (isExistingPurchase && !existingPurchaseClient) {
+    setClientFeedback("Selecione o cliente que fez a nova compra.");
+    submitButton.disabled = false;
+    submitButton.textContent = "Salvar compra";
+    return;
+  }
+
+  if (!existing && !isExistingPurchase && hasReachedClientLimit()) {
     trackEvent("client_limit_reached", {
       plan: getCurrentPlan().id,
       client_count: state.clients.length,
@@ -1369,23 +1466,28 @@ async function handleClientSubmit(event) {
     if (existing) {
       existing.name = String(formData.get("name")).trim();
       existing.phone = onlyDigits(String(formData.get("phone")));
-      existing.product = String(formData.get("product")).trim() || "compra parcelada";
+      existing.product = product;
       existing.notes = String(formData.get("notes")).trim();
-      existing.installments = buildEditedInstallments(existing, total, installments, firstDueDate);
-      addHistory(existing, "Cliente editado", `Dados e dívida atualizados para ${money(total)} em ${installments} parcela(s).`);
+      existing.installments = buildEditedInstallments(existing, total, installments, firstDueDate, product);
+      addHistory(existing, "Cliente editado", `Dados e dÃ­vida atualizados para ${money(total)} em ${installments} parcela(s).`);
+    } else if (existingPurchaseClient) {
+      existingPurchaseClient.product = product;
+      existingPurchaseClient.notes = String(formData.get("notes")).trim();
+      existingPurchaseClient.installments = appendPurchaseInstallments(existingPurchaseClient, total, installments, firstDueDate, product);
+      addHistory(existingPurchaseClient, "Nova compra cadastrada", `${product}: ${money(total)} em ${installments} parcela(s).`);
     } else {
       const client = {
         id: createId(),
         name: String(formData.get("name")).trim(),
         phone: onlyDigits(String(formData.get("phone"))),
-        product: String(formData.get("product")).trim() || "compra parcelada",
+        product,
         notes: String(formData.get("notes")).trim(),
         createdAt: new Date().toISOString(),
-        installments: buildInstallments(total, installments, firstDueDate),
+        installments: buildInstallments(total, installments, firstDueDate, product),
         history: [],
       };
 
-      addHistory(client, "Cliente cadastrado", `Dívida criada em ${installments} parcela(s), total de ${money(total)}.`);
+      addHistory(client, "Cliente cadastrado", `DÃ­vida criada em ${installments} parcela(s), total de ${money(total)}.`);
       state.clients.unshift(client);
     }
 
@@ -1395,9 +1497,10 @@ async function handleClientSubmit(event) {
     document.querySelector("#client-form-panel").classList.add("is-hidden");
     render();
     setView("clients");
-    setClientFeedback(existing ? "Cliente atualizado com sucesso." : "Cliente cadastrado com sucesso.");
-    showClientNotice(existing ? "Cliente atualizado com sucesso." : "Cliente cadastrado com sucesso.");
-    trackEvent(existing ? "client_update" : "client_create", {
+    const successMessage = existing ? "Cliente atualizado com sucesso." : existingPurchaseClient ? "Nova compra cadastrada com sucesso." : "Cliente cadastrado com sucesso.";
+    setClientFeedback(successMessage);
+    showClientNotice(successMessage);
+    trackEvent(existing ? "client_update" : existingPurchaseClient ? "client_purchase_create" : "client_create", {
       plan: getCurrentPlan().id,
       client_count: state.clients.length,
       installments_count: installments,
@@ -1407,11 +1510,11 @@ async function handleClientSubmit(event) {
     setClientFeedback("Nao foi possivel salvar o cliente. Tente novamente.");
   } finally {
     submitButton.disabled = false;
-    submitButton.textContent = editingClientId ? "Salvar alterações" : "Salvar cliente";
+    submitButton.textContent = editingClientId ? "Salvar alteraÃ§Ãµes" : "Salvar cliente";
   }
 }
 
-function buildInstallments(total, count, firstDueDate) {
+function buildInstallments(total, count, firstDueDate, product = "compra parcelada") {
   const amount = roundMoney(total / count);
   const dueDate = parseInputDate(firstDueDate);
 
@@ -1425,14 +1528,15 @@ function buildInstallments(total, count, firstDueDate) {
       number: index + 1,
       amount: adjustedAmount,
       dueDate: toInputDate(date),
+      product,
       paid: false,
       paidAt: null,
     };
   });
 }
 
-function buildEditedInstallments(client, total, count, firstDueDate) {
-  const rebuilt = buildInstallments(total, count, firstDueDate);
+function buildEditedInstallments(client, total, count, firstDueDate, product = "compra parcelada") {
+  const rebuilt = buildInstallments(total, count, firstDueDate, product);
 
   return rebuilt.map((installment, index) => {
     const previous = client.installments[index];
@@ -1441,10 +1545,21 @@ function buildEditedInstallments(client, total, count, firstDueDate) {
     return {
       ...installment,
       id: previous.id,
+      product: installment.product,
       paid: previous.paid,
       paidAt: previous.paidAt,
     };
   });
+}
+
+function appendPurchaseInstallments(client, total, count, firstDueDate, product) {
+  const startNumber = client.installments.length;
+  const newInstallments = buildInstallments(total, count, firstDueDate, product).map((installment, index) => ({
+    ...installment,
+    number: startNumber + index + 1,
+  }));
+
+  return [...client.installments, ...newInstallments];
 }
 
 function renderClients() {
@@ -1461,7 +1576,10 @@ function renderClients() {
     const summary = getClientSummary(client);
     const haystack = `${client.name} ${client.phone}`.toLowerCase();
     const matchesQuery = !query || haystack.includes(query);
-    const matchesProduct = !productQuery || client.product.toLowerCase().includes(productQuery);
+    const matchesProduct =
+      !productQuery ||
+      client.product.toLowerCase().includes(productQuery) ||
+      client.installments.some((installment) => getInstallmentProduct(client, installment).toLowerCase().includes(productQuery));
     const matchesCreated = isDateInRange(toInputDate(new Date(client.createdAt)), createdStart, createdEnd);
     const matchesDue = matchesAnyInstallmentDue(client, dueStart, dueEnd);
     const matchesFilter =
@@ -1487,6 +1605,10 @@ function renderClients() {
 
   list.querySelectorAll("[data-edit-client]").forEach((button) => {
     button.addEventListener("click", () => editClient(button.dataset.clientId));
+  });
+
+  list.querySelectorAll("[data-add-purchase]").forEach((button) => {
+    button.addEventListener("click", () => startExistingPurchase(button.dataset.clientId));
   });
 
   list.querySelectorAll("[data-delete-client]").forEach((button) => {
@@ -1560,6 +1682,7 @@ function getChargeItems() {
 
 function renderChargeCard({ client, installment, status }) {
   const todayKey = toInputDate(startOfToday());
+  const product = getInstallmentProduct(client, installment);
   const cardType = status.type === "late" ? "late" : installment.dueDate === todayKey ? "today" : "upcoming";
   const label = status.type === "late" ? "Atrasada" : installment.dueDate === todayKey ? "Vence hoje" : "Proxima";
 
@@ -1568,7 +1691,7 @@ function renderChargeCard({ client, installment, status }) {
       <div class="charge-card-header">
         <div>
           <h3>${escapeHtml(client.name)}</h3>
-          <p>${formatPhone(client.phone)} · ${escapeHtml(client.product)}</p>
+          <p>${formatPhone(client.phone)} Â· ${escapeHtml(product)}</p>
         </div>
         <span class="status-pill ${status.className}">${label}</span>
       </div>
@@ -1674,8 +1797,9 @@ function renderClientCard(client) {
             ${summary.lateCount > 0 ? "Em atraso" : summary.openTotal > 0 ? "Em aberto" : "Quitado"}
           </span>
           <button class="small-button action-client" data-edit-client data-client-id="${client.id}" type="button">Editar</button>
+          <button class="small-button action-client" data-add-purchase data-client-id="${client.id}" type="button">Nova compra</button>
           <button class="small-button action-installments" data-toggle-installments data-client-id="${client.id}" type="button">Parcelas</button>
-          <button class="small-button action-history" data-toggle-history data-client-id="${client.id}" type="button">Histórico</button>
+          <button class="small-button action-history" data-toggle-history data-client-id="${client.id}" type="button">HistÃ³rico</button>
           <button class="small-button action-delete" data-delete-client data-client-id="${client.id}" type="button">Excluir cliente</button>
         </div>
       </div>
@@ -1685,7 +1809,7 @@ function renderClientCard(client) {
           <h4>Dados pessoais</h4>
           <div class="detail-grid">
             <div class="detail-row"><span>Telefone</span><strong>${formatPhone(client.phone)}</strong></div>
-            <div class="detail-row"><span>Produto</span><strong>${escapeHtml(client.product)}</strong></div>
+            <div class="detail-row"><span>Ultima compra</span><strong>${escapeHtml(client.product)}</strong></div>
             <div class="detail-row"><span>Cadastro</span><strong>${formatDate(toInputDate(new Date(client.createdAt)))}</strong></div>
           </div>
         </section>
@@ -1696,7 +1820,7 @@ function renderClientCard(client) {
             <div class="detail-row"><span>Total</span><strong>${money(summary.total)}</strong></div>
             <div class="detail-row"><span>Em aberto</span><strong>${money(summary.openTotal)}</strong></div>
             <div class="detail-row"><span>Recebido</span><strong>${money(summary.paidTotal)}</strong></div>
-            <div class="detail-row"><span>Próximo vencimento</span><strong>${nextInstallment ? formatDate(nextInstallment.dueDate) : "Quitado"}</strong></div>
+            <div class="detail-row"><span>PrÃ³ximo vencimento</span><strong>${nextInstallment ? formatDate(nextInstallment.dueDate) : "Quitado"}</strong></div>
           </div>
         </section>
       </div>
@@ -1706,7 +1830,7 @@ function renderClientCard(client) {
       </div>
 
       <div class="client-history" id="history-${client.id}">
-        <h2>Histórico do cliente</h2>
+        <h2>HistÃ³rico do cliente</h2>
         <div class="history-list">
           ${
             history.length
@@ -1717,12 +1841,12 @@ function renderClientCard(client) {
                     (event) => `
                       <div class="history-item">
                         <strong>${escapeHtml(event.title)}</strong>
-                        <span class="history-meta">${formatDateTime(event.createdAt)} · ${escapeHtml(event.description)}</span>
+                        <span class="history-meta">${formatDateTime(event.createdAt)} Â· ${escapeHtml(event.description)}</span>
                       </div>
                     `,
                   )
                   .join("")
-              : `<div class="empty-state">Nenhum histórico registrado.</div>`
+              : `<div class="empty-state">Nenhum histÃ³rico registrado.</div>`
           }
         </div>
       </div>
@@ -1731,22 +1855,23 @@ function renderClientCard(client) {
 }
 
 function renderInstallmentRow(client, installment) {
+  const product = getInstallmentProduct(client, installment);
   const status = getInstallmentStatus(installment);
   return `
     <div class="installment-row">
       <div>
         <strong>Parcela ${installment.number}/${client.installments.length}</strong>
-        <div class="installment-summary">${formatDate(installment.dueDate)} · ${money(installment.amount)}</div>
+        <div class="installment-summary">${escapeHtml(product)} Â· ${formatDate(installment.dueDate)} Â· ${money(installment.amount)}</div>
       </div>
       <span class="status-pill ${status.className}">${status.label}</span>
       <div class="row-actions">
         ${
           installment.paid
             ? `<button class="small-button action-reopen" data-toggle-paid data-client-id="${client.id}" data-installment-id="${installment.id}" type="button">Reabrir</button>
-               <button class="small-button action-delete" data-delete-installment data-client-id="${client.id}" data-installment-id="${installment.id}" type="button">Excluir dívida</button>`
+               <button class="small-button action-delete" data-delete-installment data-client-id="${client.id}" data-installment-id="${installment.id}" type="button">Excluir dÃ­vida</button>`
             : `<button class="small-button action-whatsapp" data-whatsapp data-client-id="${client.id}" data-installment-id="${installment.id}" type="button">WhatsApp</button>
                <button class="small-button action-payment" data-toggle-paid data-client-id="${client.id}" data-installment-id="${installment.id}" type="button">Marcar pago</button>
-               <button class="small-button action-delete" data-delete-installment data-client-id="${client.id}" data-installment-id="${installment.id}" type="button">Excluir dívida</button>`
+               <button class="small-button action-delete" data-delete-installment data-client-id="${client.id}" data-installment-id="${installment.id}" type="button">Excluir dÃ­vida</button>`
         }
       </div>
     </div>
@@ -1771,6 +1896,10 @@ function getClientSummary(client) {
   );
 }
 
+function getInstallmentProduct(client, installment) {
+  return installment.product || client.product || "compra parcelada";
+}
+
 function editClient(clientId) {
   const client = state.clients.find((item) => item.id === clientId);
   if (!client) return;
@@ -1778,6 +1907,11 @@ function editClient(clientId) {
   const form = document.querySelector("#client-form");
   const summary = getClientSummary(client);
   editingClientId = client.id;
+  form.elements.purchaseMode.value = "new";
+  document.querySelector("#purchase-mode-panel").classList.add("is-hidden");
+  document.querySelector("#existing-client-field").classList.add("is-hidden");
+  form.elements.name.readOnly = false;
+  form.elements.phone.readOnly = false;
   form.elements.clientId.value = client.id;
   form.elements.name.value = client.name;
   form.elements.phone.value = client.phone;
@@ -1786,8 +1920,25 @@ function editClient(clientId) {
   form.elements.installments.value = client.installments.length;
   form.elements.firstDueDate.value = client.installments[0]?.dueDate || toInputDate(new Date());
   form.elements.notes.value = client.notes || "";
-  document.querySelector("#client-form-title").textContent = "Editar cliente e dívida";
-  document.querySelector("#client-form-submit").textContent = "Salvar alterações";
+  document.querySelector("#client-form-title").textContent = "Editar cliente e dÃ­vida";
+  document.querySelector("#client-form-submit").textContent = "Salvar alteraÃ§Ãµes";
+  setView("clients");
+  showClientForm();
+}
+
+function startExistingPurchase(clientId) {
+  const client = state.clients.find((item) => item.id === clientId);
+  if (!client) return;
+
+  resetClientForm();
+  const form = document.querySelector("#client-form");
+  form.elements.purchaseMode.value = "existing";
+  populateExistingClientSelect(client.id);
+  applyClientFormMode();
+  form.elements.product.value = "";
+  form.elements.total.value = "";
+  form.elements.installments.value = 1;
+  form.elements.firstDueDate.value = toInputDate(new Date());
   setView("clients");
   showClientForm();
 }
@@ -1935,7 +2086,7 @@ function importData(event) {
       render();
       alert("Backup importado com sucesso.");
     } catch {
-      alert("Não consegui importar esse arquivo. Verifique se é um backup JSON do Venda Segura.");
+      alert("NÃ£o consegui importar esse arquivo. Verifique se Ã© um backup JSON do Venda Segura.");
     } finally {
       event.target.value = "";
     }
@@ -1953,10 +2104,10 @@ async function openWhatsApp(clientId, installmentId) {
   const message = template
     .replaceAll("{nome}", client.name)
     .replaceAll("{valor}", money(installment.amount))
-    .replaceAll("{produto}", client.product)
+    .replaceAll("{produto}", product)
     .replaceAll("{vencimento}", formatDate(installment.dueDate));
 
-  addHistory(client, "Cobrança enviada pelo WhatsApp", `Parcela ${installment.number}/${client.installments.length}, ${money(installment.amount)}.`);
+  addHistory(client, "CobranÃ§a enviada pelo WhatsApp", `${product}: parcela ${installment.number}/${client.installments.length}, ${money(installment.amount)}.`);
   saveState();
   await syncRemoteState();
   render();
@@ -1983,7 +2134,7 @@ async function seedDemoData() {
       firstDueDate: toInputDate(addDays(today, -35)),
     },
     {
-      name: "João Pereira",
+      name: "JoÃ£o Pereira",
       phone: "92977776666",
       product: "Roupas",
       total: 320,
@@ -2005,7 +2156,7 @@ async function seedDemoData() {
     product: item.product,
     notes: "",
     createdAt: new Date().toISOString(),
-    installments: buildInstallments(item.total, item.installments, item.firstDueDate),
+    installments: buildInstallments(item.total, item.installments, item.firstDueDate, item.product),
     history: [],
   }));
 
@@ -2055,17 +2206,21 @@ function toWhatsAppPhone(value) {
 }
 
 function normalizeClient(client) {
+  const product = client.product || "compra parcelada";
   return {
     ...client,
-    product: client.product || "compra parcelada",
+    product,
     notes: client.notes || "",
     createdAt: client.createdAt || new Date().toISOString(),
-    installments: client.installments || [],
+    installments: (client.installments || []).map((installment) => ({
+      ...installment,
+      product: installment.product || product,
+    })),
     history: client.history || [
       {
         id: createId(),
-        title: "Histórico iniciado",
-        description: "Cliente importado de uma versão anterior do app.",
+        title: "HistÃ³rico iniciado",
+        description: "Cliente importado de uma versÃ£o anterior do app.",
         createdAt: client.createdAt || new Date().toISOString(),
       },
     ],
@@ -2138,3 +2293,4 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
+
