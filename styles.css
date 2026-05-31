@@ -1124,6 +1124,13 @@ h2 {
   transition: background 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
 }
 
+a.ghost-button {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  text-decoration: none;
+}
+
 .primary-button {
   background: linear-gradient(180deg, #12739a, var(--primary));
   box-shadow: 0 12px 22px rgba(15, 91, 120, 0.2);

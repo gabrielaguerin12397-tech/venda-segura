@@ -62,6 +62,7 @@ let currentProfile = null;
 let selectedCheckoutType = "essential";
 const trackedScrollDepths = new Set();
 const viewedSalesSections = new Set();
+let lastAppOpenTrackedAt = 0;
 
 runtimeStatus.textContent = "Interação ativa";
 runtimeStatus.classList.add("ready");
@@ -162,6 +163,7 @@ window.addEventListener("popstate", () => {
 
 initializeApp();
 initializeBehaviorTracking();
+initializeErrorTracking();
 
 function loadState() {
   const saved = localStorage.getItem(storageKey);
@@ -279,6 +281,7 @@ async function enterApp() {
     const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
     if (error) {
+      trackEvent("login_error", { reason: normalizeErrorForAnalytics(error) });
       setAuthStatus("Nao foi possivel entrar. Confira e-mail e senha.");
       return;
     }
@@ -291,6 +294,7 @@ async function enterApp() {
     }
   }
 
+  trackEvent("login_success");
   localStorage.setItem(sessionKey, name);
   showAppOrBilling();
 }
@@ -332,6 +336,7 @@ async function createAccount() {
   });
 
   if (error) {
+    trackEvent("signup_error", { reason: normalizeErrorForAnalytics(error) });
     setAuthStatus(`Nao foi possivel criar a conta: ${translateSupabaseError(error.message)}`);
     return;
   }
@@ -373,6 +378,26 @@ function trackEvent(name, params = {}) {
   if (typeof gtag === "function") {
     gtag("event", name, params);
   }
+}
+
+function normalizeErrorForAnalytics(error) {
+  const message = typeof error === "string" ? error : error?.message || error?.error || "unknown_error";
+  return String(message).replace(/\s+/g, " ").slice(0, 140);
+}
+
+function initializeErrorTracking() {
+  window.addEventListener("error", (event) => {
+    trackEvent("app_error", {
+      message: normalizeErrorForAnalytics(event.error || event.message),
+      source: event.filename ? "script" : "window",
+    });
+  });
+
+  window.addEventListener("unhandledrejection", (event) => {
+    trackEvent("app_unhandled_rejection", {
+      message: normalizeErrorForAnalytics(event.reason),
+    });
+  });
 }
 
 function initializeBehaviorTracking() {
@@ -423,6 +448,16 @@ function showApp() {
   document.querySelector("#billing-gate").classList.add("is-hidden");
   document.querySelector("#app-shell").classList.remove("is-hidden");
   renderPlanStatus();
+
+  const now = Date.now();
+  if (now - lastAppOpenTrackedAt > 60000) {
+    lastAppOpenTrackedAt = now;
+    trackEvent("app_open", {
+      plan: getCurrentPlan().id,
+      client_count: state.clients.length,
+      subscription_status: currentProfile?.subscription_status || "local",
+    });
+  }
 }
 
 function showSalesPage() {
@@ -1002,12 +1037,24 @@ async function startCheckout({ endpoint, button, loadingText, fallbackText, plan
     const payload = await readJsonResponse(response);
 
     if (!response.ok || !payload.url) {
+      trackEvent("checkout_error", {
+        plan: planId,
+        payment_method: paymentMethod,
+        status: response.status,
+        reason: normalizeErrorForAnalytics(payload.error || "missing_checkout_url"),
+      });
       status.textContent = payload.error || "Nao foi possivel abrir o checkout.";
       return;
     }
 
+    trackEvent("checkout_redirect", { plan: planId, payment_method: paymentMethod });
     window.location.href = payload.url;
-  } catch {
+  } catch (error) {
+    trackEvent("checkout_error", {
+      plan: planId,
+      payment_method: paymentMethod,
+      reason: normalizeErrorForAnalytics(error),
+    });
     status.textContent = "Nao foi possivel abrir o checkout. Confira se a pasta api foi enviada ao GitHub e se a Vercel terminou o deploy.";
   } finally {
     button.disabled = false;
@@ -1020,6 +1067,7 @@ async function verifySubscription(options = {}) {
   const status = document.querySelector("#billing-status");
 
   try {
+    trackEvent("subscription_verify", { silent: Boolean(options.silent) });
     if (!options.silent) {
       button.disabled = true;
       button.textContent = "Verificando...";
@@ -1043,6 +1091,10 @@ async function verifySubscription(options = {}) {
     });
 
     const payload = await readJsonResponse(response);
+    trackEvent("subscription_verify_result", {
+      status: payload.status || "unknown",
+      response_ok: response.ok,
+    });
 
     if (!response.ok) {
       status.textContent = payload.error || "Nao foi possivel verificar a assinatura.";
@@ -1229,6 +1281,10 @@ function resetClientForm() {
 
 function startNewClient() {
   if (!editingClientId && hasReachedClientLimit()) {
+    trackEvent("client_limit_reached", {
+      plan: getCurrentPlan().id,
+      client_count: state.clients.length,
+    });
     showToast(getClientLimitMessage(), "warning");
     showBillingGate();
     return;
@@ -1297,6 +1353,10 @@ async function handleClientSubmit(event) {
   const existing = state.clients.find((item) => item.id === clientId);
 
   if (!existing && hasReachedClientLimit()) {
+    trackEvent("client_limit_reached", {
+      plan: getCurrentPlan().id,
+      client_count: state.clients.length,
+    });
     setClientFeedback(getClientLimitMessage());
     showToast(getClientLimitMessage(), "warning");
     submitButton.disabled = false;
@@ -1337,7 +1397,13 @@ async function handleClientSubmit(event) {
     setView("clients");
     setClientFeedback(existing ? "Cliente atualizado com sucesso." : "Cliente cadastrado com sucesso.");
     showClientNotice(existing ? "Cliente atualizado com sucesso." : "Cliente cadastrado com sucesso.");
+    trackEvent(existing ? "client_update" : "client_create", {
+      plan: getCurrentPlan().id,
+      client_count: state.clients.length,
+      installments_count: installments,
+    });
   } catch (error) {
+    trackEvent("client_save_error", { reason: normalizeErrorForAnalytics(error) });
     setClientFeedback("Nao foi possivel salvar o cliente. Tente novamente.");
   } finally {
     submitButton.disabled = false;
@@ -1894,6 +1960,10 @@ async function openWhatsApp(clientId, installmentId) {
   saveState();
   await syncRemoteState();
   render();
+  trackEvent("whatsapp_charge_open", {
+    installment_status: status.type,
+    installment_number: installment.number,
+  });
   window.open(`https://wa.me/${toWhatsAppPhone(client.phone)}?text=${encodeURIComponent(message)}`, "_blank", "noopener");
 }
 
